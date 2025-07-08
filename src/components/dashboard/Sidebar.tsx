@@ -1,6 +1,8 @@
+
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -9,7 +11,8 @@ import {
   Warehouse,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Eye
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -40,6 +43,12 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       to: "/reports", 
       icon: FileText, 
       label: "Reports", 
+      active: false 
+    },
+    { 
+      to: "/insights", 
+      icon: Eye, 
+      label: "AI Insights", 
       active: false 
     },
     { 
@@ -83,14 +92,17 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       {/* Profile Section */}
       {!collapsed && (
         <div className="p-4 border-b border-border">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center">
-              <User className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Admin User</p>
+                <p className="text-xs text-muted-foreground">Warehouse Manager</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-sm">Admin User</p>
-              <p className="text-xs text-muted-foreground">Warehouse Manager</p>
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       )}
@@ -116,6 +128,13 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           ))}
         </nav>
       </div>
+
+      {/* Theme toggle for collapsed state */}
+      {collapsed && (
+        <div className="p-4 border-t border-border flex justify-center">
+          <ThemeToggle />
+        </div>
+      )}
 
       {/* Logout */}
       <div className="p-4 border-t border-border">

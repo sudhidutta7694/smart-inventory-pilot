@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,14 +34,44 @@ const MetricsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [activeMetric, setActiveMetric] = useState("turnover");
 
-  // Calculate summary stats
-  const latestData = metricsData[metricsData.length - 1];
-  const previousData = metricsData[metricsData.length - 2];
+  // Filter data based on selected zone and time range
+  const filteredData = useMemo(() => {
+    let data = metricsData;
+    
+    // Apply time range filter
+    const now = new Date();
+    const daysAgo = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
+    const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+    
+    data = data.filter(item => new Date(item.date) >= cutoffDate);
+    
+    // Apply zone filter (for demo purposes, we'll simulate zone-specific data)
+    if (selectedZone !== "All") {
+      // Simulate zone-specific variations
+      const zoneMultiplier = selectedZone === "North" ? 1.1 : 
+                           selectedZone === "South" ? 0.9 : 
+                           selectedZone === "East" ? 1.05 : 0.95;
+      
+      data = data.map(item => ({
+        ...item,
+        inventory_turnover: item.inventory_turnover * zoneMultiplier,
+        avg_daily_orders: Math.round(item.avg_daily_orders * zoneMultiplier),
+        shipment_delay: item.shipment_delay * (2 - zoneMultiplier), // inverse for delays
+        forecast_accuracy: Math.min(95, item.forecast_accuracy * zoneMultiplier)
+      }));
+    }
+    
+    return data;
+  }, [selectedZone, timeRange]);
+
+  // Calculate summary stats from filtered data
+  const latestData = filteredData[filteredData.length - 1] || metricsData[metricsData.length - 1];
+  const previousData = filteredData[filteredData.length - 2] || metricsData[metricsData.length - 2];
   
-  const turnoverChange = ((latestData.inventory_turnover - previousData.inventory_turnover) / previousData.inventory_turnover * 100).toFixed(1);
-  const ordersChange = ((latestData.avg_daily_orders - previousData.avg_daily_orders) / previousData.avg_daily_orders * 100).toFixed(1);
-  const delayChange = ((latestData.shipment_delay - previousData.shipment_delay) / previousData.shipment_delay * 100).toFixed(1);
-  const accuracyChange = ((latestData.forecast_accuracy - previousData.forecast_accuracy) / previousData.forecast_accuracy * 100).toFixed(1);
+  const turnoverChange = previousData ? ((latestData.inventory_turnover - previousData.inventory_turnover) / previousData.inventory_turnover * 100).toFixed(1) : "0";
+  const ordersChange = previousData ? ((latestData.avg_daily_orders - previousData.avg_daily_orders) / previousData.avg_daily_orders * 100).toFixed(1) : "0";
+  const delayChange = previousData ? ((latestData.shipment_delay - previousData.shipment_delay) / previousData.shipment_delay * 100).toFixed(1) : "0";
+  const accuracyChange = previousData ? ((latestData.forecast_accuracy - previousData.forecast_accuracy) / previousData.forecast_accuracy * 100).toFixed(1) : "0";
 
   const metricsCards = [
     {
@@ -78,7 +109,7 @@ const MetricsOverview = () => {
       case "turnover":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={metricsData}>
+            <LineChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="date" 
@@ -105,7 +136,7 @@ const MetricsOverview = () => {
       case "orders":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={metricsData}>
+            <AreaChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="date" 
@@ -131,7 +162,7 @@ const MetricsOverview = () => {
       case "delays":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={metricsData}>
+            <BarChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="date" 
@@ -155,7 +186,7 @@ const MetricsOverview = () => {
       case "stock-events":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={metricsData}>
+            <AreaChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="date" 
@@ -219,7 +250,7 @@ const MetricsOverview = () => {
                 }`}>
                   {Math.abs(parseFloat(metric.change))}%
                 </span>
-                <span className="text-sm text-muted-foreground ml-1">vs yesterday</span>
+                <span className="text-sm text-muted-foreground ml-1">vs previous period</span>
               </div>
             </CardContent>
           </Card>
@@ -233,6 +264,11 @@ const MetricsOverview = () => {
             <CardTitle className="flex items-center space-x-2">
               <Calendar className="h-5 w-5" />
               <span>Warehouse Metrics Overview</span>
+              {selectedZone !== "All" && (
+                <Badge variant="secondary" className="ml-2">
+                  {selectedZone} Zone
+                </Badge>
+              )}
             </CardTitle>
             
             <div className="flex items-center space-x-2">
