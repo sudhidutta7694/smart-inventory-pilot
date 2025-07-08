@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,12 @@ import {
   Target,
   ArrowRight
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { insights, type Insight } from "@/data/mockData";
 
 const AIInsightPanel = () => {
+  const navigate = useNavigate();
+
   const getInsightIcon = (type: Insight['type']) => {
     switch (type) {
       case 'understock':
@@ -104,7 +108,11 @@ const AIInsightPanel = () => {
           </div>
         ))}
         
-        <Button variant="outline" className="w-full mt-4">
+        <Button 
+          variant="outline" 
+          className="w-full mt-4"
+          onClick={() => navigate('/insights')}
+        >
           View All Insights
         </Button>
       </CardContent>

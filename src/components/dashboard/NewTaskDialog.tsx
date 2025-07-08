@@ -21,9 +21,17 @@ import { cn } from "@/lib/utils";
 interface NewTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onTaskCreate: (taskData: {
+    title: string;
+    type: 'reorder' | 'reroute' | 'flag' | 'report';
+    priority: 'high' | 'medium' | 'low';
+    dueDate: string;
+    description?: string;
+    assignee?: string;
+  }) => void;
 }
 
-export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
+export function NewTaskDialog({ open, onOpenChange, onTaskCreate }: NewTaskDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     type: "",
@@ -62,24 +70,16 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
       return;
     }
 
-    // Mock task creation
-    const newTask = {
-      id: `TASK${String(Date.now()).slice(-3)}`,
+    const taskData = {
       title: formData.title,
       type: formData.type as 'reorder' | 'reroute' | 'flag' | 'report',
       priority: formData.priority as 'high' | 'medium' | 'low',
-      status: 'pending' as const,
       dueDate: formData.dueDate?.toISOString().split('T')[0] || '',
       description: formData.description,
       assignee: formData.assignee || 'Admin User',
     };
 
-    console.log('New task created:', newTask);
-    
-    toast({
-      title: "Task Created",
-      description: `"${formData.title}" has been added to your task list`,
-    });
+    onTaskCreate(taskData);
 
     // Reset form
     setFormData({

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { insights, zones } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
+import jsPDF from 'jspdf';
 
 const AllInsights = () => {
   const navigate = useNavigate();
@@ -66,54 +66,97 @@ const AllInsights = () => {
     }
   };
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text('AI INSIGHTS SUMMARY REPORT', 20, 30);
+    
+    // Report details
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 50);
+    doc.text(`Total Insights: ${filteredInsights.length}`, 20, 60);
+    
+    // Priority breakdown
+    const highPriority = filteredInsights.filter(i => i.priority === 'high').length;
+    const mediumPriority = filteredInsights.filter(i => i.priority === 'medium').length;
+    const lowPriority = filteredInsights.filter(i => i.priority === 'low').length;
+    
+    doc.text(`High Priority Insights: ${highPriority}`, 20, 80);
+    doc.text(`Medium Priority Insights: ${mediumPriority}`, 20, 90);
+    doc.text(`Low Priority Insights: ${lowPriority}`, 20, 100);
+    
+    // Type breakdown
+    doc.setFontSize(14);
+    doc.text('BREAKDOWN BY TYPE:', 20, 120);
+    doc.setFontSize(12);
+    
+    const typeBreakdown = {
+      understock: filteredInsights.filter(i => i.type === 'understock').length,
+      overstock: filteredInsights.filter(i => i.type === 'overstock').length,
+      forecast: filteredInsights.filter(i => i.type === 'forecast').length,
+      delay: filteredInsights.filter(i => i.type === 'delay').length
+    };
+    
+    let yPos = 130;
+    Object.entries(typeBreakdown).forEach(([type, count]) => {
+      doc.text(`• ${type.charAt(0).toUpperCase() + type.slice(1)} Issues: ${count}`, 20, yPos);
+      yPos += 10;
+    });
+    
+    // Zone breakdown
+    doc.setFontSize(14);
+    doc.text('BREAKDOWN BY ZONE:', 20, yPos + 10);
+    doc.setFontSize(12);
+    yPos += 20;
+    
+    zones.filter(z => z !== "All").forEach(zone => {
+      const zoneCount = filteredInsights.filter(i => i.zone === zone).length;
+      doc.text(`• ${zone}: ${zoneCount} insights`, 20, yPos);
+      yPos += 10;
+    });
+    
+    // Add new page for detailed insights
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.text('DETAILED INSIGHTS:', 20, 30);
+    
+    yPos = 50;
+    filteredInsights.forEach((insight, index) => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 30;
+      }
+      
+      doc.setFontSize(12);
+      doc.text(`${index + 1}. [${insight.priority.toUpperCase()}] ${insight.title}`, 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(10);
+      doc.text(`Type: ${insight.type} | Zone: ${insight.zone}`, 25, yPos);
+      yPos += 8;
+      
+      const descLines = doc.splitTextToSize(`Description: ${insight.description}`, 170);
+      doc.text(descLines, 25, yPos);
+      yPos += descLines.length * 5 + 5;
+      
+      doc.text(`Impact: ${insight.impact}`, 25, yPos);
+      yPos += 8;
+      doc.text(`Recommended Action: ${insight.cta}`, 25, yPos);
+      yPos += 15;
+    });
+    
+    return doc;
+  };
+
   const handleDownloadSummary = () => {
-    // Mock summary generation and download
-    const summary = `
-AI INSIGHTS SUMMARY REPORT
-Generated on: ${new Date().toLocaleDateString()}
-
-TOTAL INSIGHTS: ${filteredInsights.length}
-
-HIGH PRIORITY INSIGHTS: ${filteredInsights.filter(i => i.priority === 'high').length}
-MEDIUM PRIORITY INSIGHTS: ${filteredInsights.filter(i => i.priority === 'medium').length}
-LOW PRIORITY INSIGHTS: ${filteredInsights.filter(i => i.priority === 'low').length}
-
-BREAKDOWN BY TYPE:
-- Understock Issues: ${filteredInsights.filter(i => i.type === 'understock').length}
-- Overstock Issues: ${filteredInsights.filter(i => i.type === 'overstock').length}
-- Forecast Insights: ${filteredInsights.filter(i => i.type === 'forecast').length}
-- Delay Alerts: ${filteredInsights.filter(i => i.type === 'delay').length}
-
-BREAKDOWN BY ZONE:
-${zones.filter(z => z !== "All").map(zone => 
-  `- ${zone}: ${filteredInsights.filter(i => i.zone === zone).length} insights`
-).join('\n')}
-
-DETAILED INSIGHTS:
-${filteredInsights.map((insight, index) => 
-  `${index + 1}. [${insight.priority.toUpperCase()}] ${insight.title}
-     Type: ${insight.type} | Zone: ${insight.zone}
-     Description: ${insight.description}
-     Impact: ${insight.impact}
-     Recommended Action: ${insight.cta}
-     ---`
-).join('\n\n')}
-    `.trim();
-
-    // Create and download the file
-    const blob = new Blob([summary], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AI-Insights-Summary-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const doc = generatePDF();
+    doc.save(`AI-Insights-Summary-${new Date().toISOString().split('T')[0]}.pdf`);
 
     toast({
       title: "Summary Downloaded",
-      description: "AI insights summary has been downloaded successfully",
+      description: "AI insights summary has been downloaded as PDF successfully",
     });
   };
 

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import {
   Plus
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { NewTaskDialog } from "./NewTaskDialog";
 
 interface Task {
   id: string;
@@ -20,9 +22,12 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
   dueDate: string;
+  description?: string;
+  assignee?: string;
 }
 
 const AdminTaskWindow = () => {
+  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "TASK001",
@@ -81,6 +86,33 @@ const AdminTaskWindow = () => {
     });
   };
 
+  const handleNewTask = (newTaskData: {
+    title: string;
+    type: 'reorder' | 'reroute' | 'flag' | 'report';
+    priority: 'high' | 'medium' | 'low';
+    dueDate: string;
+    description?: string;
+    assignee?: string;
+  }) => {
+    const newTask: Task = {
+      id: `TASK${String(Date.now()).slice(-3)}`,
+      title: newTaskData.title,
+      type: newTaskData.type,
+      priority: newTaskData.priority,
+      status: 'pending',
+      dueDate: newTaskData.dueDate,
+      description: newTaskData.description,
+      assignee: newTaskData.assignee || 'Admin User',
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+    
+    toast({
+      title: "Task Created",
+      description: `"${newTaskData.title}" has been added to your task list`,
+    });
+  };
+
   const getTaskIcon = (type: Task['type']) => {
     switch (type) {
       case 'reorder':
@@ -128,130 +160,142 @@ const AdminTaskWindow = () => {
   };
 
   return (
-    <Card className="h-full shadow-lg">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-success" />
+    <>
+      <Card className="h-full shadow-lg">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-success/10 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-success" />
+              </div>
+              <span>Admin Tasks</span>
             </div>
-            <span>Admin Tasks</span>
-          </div>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            New Task
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        
-        {/* Quick Actions */}
-        <div className="space-y-2">
-          <h4 className="font-medium text-sm text-muted-foreground">Quick Actions</h4>
-          <div className="grid grid-cols-2 gap-2">
             <Button 
               variant="outline" 
-              size="sm" 
-              className="justify-start h-9"
-              onClick={() => handleQuickAction("Reorder Stock")}
+              size="sm"
+              onClick={() => setIsNewTaskDialogOpen(true)}
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reorder Stock
+              <Plus className="h-4 w-4 mr-1" />
+              New Task
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="justify-start h-9"
-              onClick={() => handleQuickAction("Reroute Shipment")}
-            >
-              <Truck className="h-4 w-4 mr-2" />
-              Reroute Shipment
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="justify-start h-9"
-              onClick={() => handleQuickAction("Flag Overstock")}
-            >
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Flag Overstock
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="justify-start h-9"
-              onClick={() => handleQuickAction("Generate Report")}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Generate Report
-            </Button>
-          </div>
-        </div>
-
-        {/* Active Tasks */}
-        <div className="space-y-2">
-          <h4 className="font-medium text-sm text-muted-foreground">Active Tasks</h4>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="p-3 border border-border rounded-lg space-y-2"
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          
+          {/* Quick Actions */}
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-muted-foreground">Quick Actions</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start h-9"
+                onClick={() => handleQuickAction("Reorder Stock")}
               >
-                <div className="flex items-start justify-between space-x-2">
-                  <div className="flex items-start space-x-2 flex-1">
-                    {getTaskIcon(task.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm leading-tight">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">Due: {task.dueDate}</p>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reorder Stock
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start h-9"
+                onClick={() => handleQuickAction("Reroute Shipment")}
+              >
+                <Truck className="h-4 w-4 mr-2" />
+                Reroute Shipment
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start h-9"
+                onClick={() => handleQuickAction("Flag Overstock")}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Flag Overstock
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start h-9"
+                onClick={() => handleQuickAction("Generate Report")}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Generate Report
+              </Button>
+            </div>
+          </div>
+
+          {/* Active Tasks */}
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-muted-foreground">Active Tasks</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="p-3 border border-border rounded-lg space-y-2"
+                >
+                  <div className="flex items-start justify-between space-x-2">
+                    <div className="flex items-start space-x-2 flex-1">
+                      {getTaskIcon(task.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-tight">{task.title}</p>
+                        <p className="text-xs text-muted-foreground">Due: {task.dueDate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Badge 
+                        variant={getPriorityColor(task.priority)}
+                        className="text-xs"
+                      >
+                        {task.priority}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-1">
+                  
+                  <div className="flex items-center justify-between">
                     <Badge 
-                      variant={getPriorityColor(task.priority)}
+                      variant={getStatusColor(task.status)}
                       className="text-xs"
                     >
-                      {task.priority}
+                      {getStatusIcon(task.status)}
+                      <span className="ml-1">{task.status.replace('-', ' ')}</span>
                     </Badge>
+                    
+                    {task.status === 'pending' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-6 text-xs"
+                        onClick={() => handleTaskAction(task.id, 'start')}
+                      >
+                        Start
+                      </Button>
+                    )}
+                    
+                    {task.status === 'in-progress' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-6 text-xs"
+                        onClick={() => handleTaskAction(task.id, 'complete')}
+                      >
+                        Complete
+                      </Button>
+                    )}
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <Badge 
-                    variant={getStatusColor(task.status)}
-                    className="text-xs"
-                  >
-                    {getStatusIcon(task.status)}
-                    <span className="ml-1">{task.status.replace('-', ' ')}</span>
-                  </Badge>
-                  
-                  {task.status === 'pending' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-6 text-xs"
-                      onClick={() => handleTaskAction(task.id, 'start')}
-                    >
-                      Start
-                    </Button>
-                  )}
-                  
-                  {task.status === 'in-progress' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-6 text-xs"
-                      onClick={() => handleTaskAction(task.id, 'complete')}
-                    >
-                      Complete
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <NewTaskDialog 
+        open={isNewTaskDialogOpen}
+        onOpenChange={setIsNewTaskDialogOpen}
+        onTaskCreate={handleNewTask}
+      />
+    </>
   );
 };
 
