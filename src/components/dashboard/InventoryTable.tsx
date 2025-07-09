@@ -21,12 +21,15 @@ import {
   TrendingUp,
   TrendingDown,
   MoreHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  Eye
 } from "lucide-react";
 import { products, zones, categories, suppliers, type Product } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const InventoryTable = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -45,12 +48,10 @@ const InventoryTable = () => {
       return matchesSearch && matchesZone && matchesCategory && matchesSupplier;
     });
 
-    // Sort the filtered results
     filtered.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
       
-      // Handle different data types
       if (typeof aValue === "string") {
         aValue = aValue.toLowerCase();
         bValue = (bValue as string).toLowerCase();
@@ -80,6 +81,10 @@ const InventoryTable = () => {
       title: "Reorder Initiated",
       description: `Reorder process started for ${productName}`,
     });
+  };
+
+  const handleViewMore = (productId: string) => {
+    navigate(`/product/${productId}`);
   };
 
   const getStockStatus = (product: Product) => {
@@ -143,7 +148,6 @@ const InventoryTable = () => {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-wrap gap-2 mt-4">
           <Select value={selectedZone} onValueChange={setSelectedZone}>
             <SelectTrigger className="w-32">
@@ -280,6 +284,15 @@ const InventoryTable = () => {
                     
                     <TableCell>
                       <div className="flex items-center space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewMore(product.id)}
+                          className="h-8 px-2 text-xs"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
                         {product.reorder_recommendation && (
                           <Button
                             variant="outline"
