@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
   id: string;
+  username: string;
   name: string;
   warehouse: 'South' | 'East';
   role: 'admin';
@@ -10,7 +11,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (warehouse: 'South' | 'East') => void;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -25,19 +26,26 @@ export const useAuth = () => {
   return context;
 };
 
-const mockUsers: Record<string, User> = {
-  'admin_south': {
+const mockUsers: User[] = [
+  {
     id: 'admin_south',
+    username: 'admin1',
     name: 'Sarah Johnson',
     warehouse: 'South',
     role: 'admin'
   },
-  'admin_east': {
+  {
     id: 'admin_east',
+    username: 'admin2', 
     name: 'Mike Chen',
     warehouse: 'East',
     role: 'admin'
   }
+];
+
+const mockPasswords: Record<string, string> = {
+  'admin1': 'south123pass',
+  'admin2': 'east123pass'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,15 +54,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('currentUser');
+      }
     }
   }, []);
 
-  const login = (warehouse: 'South' | 'East') => {
-    const userId = `admin_${warehouse.toLowerCase()}`;
-    const userData = mockUsers[userId];
-    setUser(userData);
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+  const login = async (username: string, password: string): Promise<boolean> => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const foundUser = mockUsers.find(u => u.username === username);
+    const validPassword = mockPasswords[username] === password;
+    
+    if (foundUser && validPassword) {
+      setUser(foundUser);
+      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+      return true;
+    }
+    
+    return false;
   };
 
   const logout = () => {

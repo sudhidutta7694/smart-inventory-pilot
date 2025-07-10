@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { WarehouseProvider } from "@/contexts/WarehouseContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
@@ -25,6 +26,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 };
 
+const DashboardRedirect = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <Navigate to={`/${user.warehouse.toLowerCase()}/dashboard`} replace />;
+};
+
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -39,15 +50,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/south/dashboard" replace />} />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
+      <Route path="/" element={<DashboardRedirect />} />
+      <Route path="/dashboard" element={<DashboardRedirect />} />
+      
       <Route 
         path="/south/dashboard" 
         element={
@@ -114,15 +119,17 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
       <AuthProvider>
-        <WarehouseProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
-        </WarehouseProvider>
+        <InventoryProvider>
+          <WarehouseProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </TooltipProvider>
+          </WarehouseProvider>
+        </InventoryProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

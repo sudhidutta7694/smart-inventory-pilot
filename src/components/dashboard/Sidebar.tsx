@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -23,12 +24,15 @@ interface SidebarProps {
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
+
+  const warehouseRoute = user?.warehouse.toLowerCase() || 'south';
 
   const navigationItems = [
     { 
       label: "Dashboard", 
       icon: Home, 
-      path: "/dashboard" 
+      path: `/${warehouseRoute}/dashboard` 
     },
     { 
       label: "Reports", 
@@ -57,20 +61,12 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     }
   ];
 
-  const warehouseItems = [
-    { 
-      label: "South Warehouse", 
-      icon: Home, 
-      path: "/south/dashboard" 
-    },
-    { 
-      label: "East Warehouse", 
-      icon: Home, 
-      path: "/east/dashboard" 
-    }
-  ];
-
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className={`bg-background border-r border-border h-screen transition-all duration-300 ${
@@ -81,9 +77,14 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <h2 className="text-lg font-semibold text-foreground">
-              Supply Chain
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Supply Chain AI
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {user?.warehouse} Warehouse
+              </p>
+            </div>
           )}
           <Button
             variant="ghost"
@@ -98,35 +99,13 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
-        
-        {/* Main Navigation */}
         <div className="space-y-1">
           {!collapsed && (
             <p className="text-xs font-medium text-muted-foreground px-2 py-1">
-              Main Navigation
+              Navigation
             </p>
           )}
           {navigationItems.map((item) => (
-            <Button
-              key={item.path}
-              variant={isActive(item.path) ? "secondary" : "ghost"}
-              className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}
-              onClick={() => navigate(item.path)}
-            >
-              <item.icon className="h-4 w-4" />
-              {!collapsed && <span className="ml-2">{item.label}</span>}
-            </Button>
-          ))}
-        </div>
-
-        {/* Warehouse Dashboards */}
-        <div className="space-y-1 pt-4">
-          {!collapsed && (
-            <p className="text-xs font-medium text-muted-foreground px-2 py-1">
-              Warehouse Views
-            </p>
-          )}
-          {warehouseItems.map((item) => (
             <Button
               key={item.path}
               variant={isActive(item.path) ? "secondary" : "ghost"}
@@ -149,7 +128,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         <Button
           variant="ghost"
           className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}
-          onClick={() => navigate('/')}
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span className="ml-2">Logout</span>}

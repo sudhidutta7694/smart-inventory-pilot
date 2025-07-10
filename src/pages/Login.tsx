@@ -3,28 +3,59 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Warehouse, ShieldCheck, TrendingUp } from "lucide-react";
+import { Warehouse, ShieldCheck, TrendingUp, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = async (warehouse: 'South' | 'East') => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username || !password) {
+      toast({
+        title: "Login Error",
+        description: "Please enter both username and password",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Mock authentication delay
-    setTimeout(() => {
-      login(warehouse);
+    try {
+      const success = await login(username, password);
+      
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to SupplyChain AI Dashboard",
+        });
+        // Navigation will be handled by the app based on user warehouse
+        navigate("/dashboard");
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid username or password",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Login Successful",
-        description: `Welcome to ${warehouse} Warehouse Dashboard`,
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive"
       });
-      navigate(`/${warehouse.toLowerCase()}/dashboard`);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -89,7 +120,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Side - Warehouse Selection */}
+        {/* Right Side - Login Form */}
         <div className="w-full max-w-md mx-auto">
           <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
             <CardHeader className="space-y-2 text-center">
@@ -98,58 +129,62 @@ const Login = () => {
                   <Warehouse className="h-8 w-8 text-primary-foreground" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold">Select Your Warehouse</CardTitle>
+              <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
               <CardDescription>
-                Choose your warehouse location to access the admin dashboard
+                Enter your credentials to access the warehouse dashboard
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              
-              {/* South Warehouse */}
-              <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold">South Warehouse</h3>
-                      <p className="text-sm text-muted-foreground">Admin: Sarah Johnson</p>
-                      <p className="text-xs text-muted-foreground">Atlanta, GA</p>
-                    </div>
-                    <Button 
-                      onClick={() => handleLogin('South')}
-                      disabled={isLoading}
-                      variant="outline"
-                    >
-                      {isLoading ? "Signing in..." : "Access"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              {/* East Warehouse */}
-              <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold">East Warehouse</h3>
-                      <p className="text-sm text-muted-foreground">Admin: Mike Chen</p>
-                      <p className="text-xs text-muted-foreground">New York, NY</p>
-                    </div>
-                    <Button 
-                      onClick={() => handleLogin('East')}
-                      disabled={isLoading}
-                      variant="outline"
-                    >
-                      {isLoading ? "Signing in..." : "Access"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
               
               <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground text-center mb-2">Demo System</p>
-                <div className="text-xs space-y-1 text-center">
-                  <p>Each warehouse has its own admin dashboard</p>
-                  <p>Cross-warehouse rerouting requests and approvals</p>
+                <div className="flex items-center space-x-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium text-muted-foreground">Demo Credentials</p>
+                </div>
+                <div className="text-xs space-y-2">
+                  <div className="space-y-1">
+                    <p className="font-medium">South Warehouse Admin:</p>
+                    <p>Username: <code className="bg-muted px-1 rounded">admin1</code></p>
+                    <p>Password: <code className="bg-muted px-1 rounded">south123pass</code></p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">East Warehouse Admin:</p>
+                    <p>Username: <code className="bg-muted px-1 rounded">admin2</code></p>
+                    <p>Password: <code className="bg-muted px-1 rounded">east123pass</code></p>
+                  </div>
                 </div>
               </div>
             </CardContent>
