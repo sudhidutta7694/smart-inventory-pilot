@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NewTaskDialog } from "./NewTaskDialog";
+import { useWarehouse } from "@/contexts/WarehouseContext";
 
 interface Task {
   id: string;
@@ -27,6 +28,7 @@ interface Task {
 }
 
 const AdminTaskWindow = () => {
+  const { rerouteRequests, currentWarehouse } = useWarehouse();
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -112,6 +114,31 @@ const AdminTaskWindow = () => {
       description: `"${newTaskData.title}" has been added to your task list`,
     });
   };
+
+  // Convert reroute requests to tasks for current warehouse
+  const rerouteTasks = rerouteRequests
+    .filter(request => 
+      request.fromWarehouse === currentWarehouse || 
+      request.toWarehouse === currentWarehouse
+    )
+    .map(request => ({
+      id: `REROUTE-${request.id}`,
+      title: request.fromWarehouse === currentWarehouse 
+        ? `Reroute ${request.productName} to ${request.toWarehouse}`
+        : `Receive ${request.productName} from ${request.fromWarehouse}`,
+      type: 'reroute' as const,
+      priority: 'medium' as const,
+      status: request.status === 'pending' ? 'pending' as const :
+              request.status === 'approved' ? 'in-progress' as const :
+              request.status === 'completed' ? 'completed' as const : 'pending' as const,
+      dueDate: request.estimatedDelivery ? new Date(request.estimatedDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      description: request.reason,
+      assignee: 'Warehouse Admin'
+    }));
+
+  const allTasks = [...tasks, ...rerouteTasks].sort((a, b) => 
+    new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+  );
 
   const getTaskIcon = (type: Task['type']) => {
     switch (type) {
@@ -229,7 +256,7 @@ const AdminTaskWindow = () => {
           <div className="space-y-2">
             <h4 className="font-medium text-sm text-muted-foreground">Active Tasks</h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {tasks.map((task) => (
+              {allTasks.map((task) => (
                 <div
                   key={task.id}
                   className="p-3 border border-border rounded-lg space-y-2"
@@ -261,7 +288,7 @@ const AdminTaskWindow = () => {
                       <span className="ml-1">{task.status.replace('-', ' ')}</span>
                     </Badge>
                     
-                    {task.status === 'pending' && (
+                    {task.status === 'pending' && !task.id.startsWith('REROUTE-') && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -272,7 +299,7 @@ const AdminTaskWindow = () => {
                       </Button>
                     )}
                     
-                    {task.status === 'in-progress' && (
+                    {task.status === 'in-progress' && !task.id.startsWith('REROUTE-') && (
                       <Button 
                         variant="outline" 
                         size="sm" 

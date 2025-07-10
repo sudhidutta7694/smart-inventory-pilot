@@ -1,20 +1,19 @@
 
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { 
-  LayoutDashboard, 
+  BarChart3, 
   FileText, 
   Settings, 
   LogOut, 
-  Warehouse,
+  Home,
+  TrendingUp,
+  Truck,
   ChevronLeft,
-  ChevronRight,
-  User,
-  Eye
+  ChevronRight
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -23,130 +22,137 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = () => {
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/");
-  };
-
-  const navItems = [
+  const navigationItems = [
     { 
-      to: "/dashboard", 
-      icon: LayoutDashboard, 
       label: "Dashboard", 
-      active: true 
+      icon: Home, 
+      path: "/dashboard" 
     },
     { 
-      to: "/reports", 
-      icon: FileText, 
       label: "Reports", 
-      active: false 
+      icon: FileText, 
+      path: "/reports" 
     },
     { 
-      to: "/insights", 
-      icon: Eye, 
       label: "AI Insights", 
-      active: false 
+      icon: TrendingUp, 
+      path: "/insights" 
     },
     { 
-      to: "/settings", 
-      icon: Settings, 
-      label: "Settings", 
-      active: false 
+      label: "Rerouting", 
+      icon: Truck, 
+      path: "/rerouting-status" 
     },
+    { 
+      label: "Analytics", 
+      icon: BarChart3, 
+      path: "/analytics" 
+    },
+    { 
+      label: "Settings", 
+      icon: Settings, 
+      path: "/settings" 
+    }
   ];
 
+  const warehouseItems = [
+    { 
+      label: "South Warehouse", 
+      icon: Home, 
+      path: "/south/dashboard" 
+    },
+    { 
+      label: "East Warehouse", 
+      icon: Home, 
+      path: "/east/dashboard" 
+    }
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <div className={`bg-card border-r border-border transition-all duration-300 flex flex-col h-full ${
-      collapsed ? "w-16" : "w-64"
-    }`}>
+    <div className={`bg-background border-r border-border h-screen transition-all duration-300 ${
+      collapsed ? 'w-16' : 'w-64'
+    } flex flex-col`}>
       
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-primary to-primary-glow rounded-lg">
-                <Warehouse className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h2 className="font-bold text-sm">SupplyChain AI</h2>
-                <p className="text-xs text-muted-foreground">Admin Panel</p>
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Supply Chain
+            </h2>
           )}
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={onToggle}
-            className="h-8 w-8"
+            className="ml-auto"
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
-      {/* Profile Section */}
-      {!collapsed && (
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="font-medium text-sm">Admin User</p>
-                <p className="text-xs text-muted-foreground">Warehouse Manager</p>
-              </div>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
-      <div className="flex-1 p-4">
-        <nav className="space-y-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                } ${collapsed ? "justify-center" : ""}`
-              }
+      <nav className="flex-1 p-4 space-y-2">
+        
+        {/* Main Navigation */}
+        <div className="space-y-1">
+          {!collapsed && (
+            <p className="text-xs font-medium text-muted-foreground px-2 py-1">
+              Main Navigation
+            </p>
+          )}
+          {navigationItems.map((item) => (
+            <Button
+              key={item.path}
+              variant={isActive(item.path) ? "secondary" : "ghost"}
+              className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}
+              onClick={() => navigate(item.path)}
             >
-              <item.icon className="h-5 w-5" />
-              {!collapsed && <span className="font-medium">{item.label}</span>}
-            </NavLink>
+              <item.icon className="h-4 w-4" />
+              {!collapsed && <span className="ml-2">{item.label}</span>}
+            </Button>
           ))}
-        </nav>
-      </div>
+        </div>
 
-      {/* Theme toggle for collapsed state */}
-      {collapsed && (
-        <div className="p-4 border-t border-border flex justify-center">
+        {/* Warehouse Dashboards */}
+        <div className="space-y-1 pt-4">
+          {!collapsed && (
+            <p className="text-xs font-medium text-muted-foreground px-2 py-1">
+              Warehouse Views
+            </p>
+          )}
+          {warehouseItems.map((item) => (
+            <Button
+              key={item.path}
+              variant={isActive(item.path) ? "secondary" : "ghost"}
+              className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}
+              onClick={() => navigate(item.path)}
+            >
+              <item.icon className="h-4 w-4" />
+              {!collapsed && <span className="ml-2">{item.label}</span>}
+            </Button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-border space-y-2">
+        <div className="flex items-center justify-center">
           <ThemeToggle />
         </div>
-      )}
-
-      {/* Logout */}
-      <div className="p-4 border-t border-border">
+        
         <Button
           variant="ghost"
-          className={`w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent ${
-            collapsed ? "px-0 justify-center" : ""
-          }`}
-          onClick={handleLogout}
+          className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}
+          onClick={() => navigate('/')}
         >
-          <LogOut className="h-5 w-5" />
-          {!collapsed && <span className="ml-3">Logout</span>}
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-2">Logout</span>}
         </Button>
       </div>
     </div>
