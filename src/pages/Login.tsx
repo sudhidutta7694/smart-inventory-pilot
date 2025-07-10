@@ -1,37 +1,28 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Warehouse, ShieldCheck, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (warehouse: 'South' | 'East') => {
     setIsLoading(true);
 
     // Mock authentication delay
     setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome to Supply Chain Intelligence Platform",
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Please enter both email and password",
-          variant: "destructive",
-        });
-      }
+      login(warehouse);
+      toast({
+        title: "Login Successful",
+        description: `Welcome to ${warehouse} Warehouse Dashboard`,
+      });
+      navigate(`/${warehouse.toLowerCase()}/dashboard`);
       setIsLoading(false);
     }, 1000);
   };
@@ -98,7 +89,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
+        {/* Right Side - Warehouse Selection */}
         <div className="w-full max-w-md mx-auto">
           <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
             <CardHeader className="space-y-2 text-center">
@@ -107,50 +98,58 @@ const Login = () => {
                   <Warehouse className="h-8 w-8 text-primary-foreground" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold">Warehouse Admin Login</CardTitle>
+              <CardTitle className="text-2xl font-bold">Select Your Warehouse</CardTitle>
               <CardDescription>
-                Enter your credentials to access the supply chain dashboard
+                Choose your warehouse location to access the admin dashboard
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="admin@warehouse.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 mt-6" 
-                  variant="dashboard"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
+            <CardContent className="space-y-4">
+              
+              {/* South Warehouse */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold">South Warehouse</h3>
+                      <p className="text-sm text-muted-foreground">Admin: Sarah Johnson</p>
+                      <p className="text-xs text-muted-foreground">Atlanta, GA</p>
+                    </div>
+                    <Button 
+                      onClick={() => handleLogin('South')}
+                      disabled={isLoading}
+                      variant="outline"
+                    >
+                      {isLoading ? "Signing in..." : "Access"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* East Warehouse */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold">East Warehouse</h3>
+                      <p className="text-sm text-muted-foreground">Admin: Mike Chen</p>
+                      <p className="text-xs text-muted-foreground">New York, NY</p>
+                    </div>
+                    <Button 
+                      onClick={() => handleLogin('East')}
+                      disabled={isLoading}
+                      variant="outline"
+                    >
+                      {isLoading ? "Signing in..." : "Access"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
               
               <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground text-center mb-2">Demo Credentials</p>
+                <p className="text-sm text-muted-foreground text-center mb-2">Demo System</p>
                 <div className="text-xs space-y-1 text-center">
-                  <p><strong>Email:</strong> admin@warehouse.com</p>
-                  <p><strong>Password:</strong> demo123</p>
+                  <p>Each warehouse has its own admin dashboard</p>
+                  <p>Cross-warehouse rerouting requests and approvals</p>
                 </div>
               </div>
             </CardContent>

@@ -7,11 +7,14 @@ import MetricsOverview from "@/components/dashboard/MetricsOverview";
 import InventoryTable from "@/components/dashboard/InventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 const SouthDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { setCurrentWarehouse } = useWarehouse();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     setCurrentWarehouse('South');
@@ -33,6 +36,12 @@ const SouthDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <NotificationsPanel />
+              <span className="text-sm text-muted-foreground">
+                {user?.name}
+              </span>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                Logout
+              </Button>
             </div>
           </div>
         </header>

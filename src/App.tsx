@@ -3,8 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { WarehouseProvider } from "@/contexts/WarehouseContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -19,30 +20,110 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
+};
+
+const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/south/dashboard" replace />} />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/south/dashboard" 
+        element={
+          <ProtectedRoute>
+            <SouthDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/east/dashboard" 
+        element={
+          <ProtectedRoute>
+            <EastDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/reports" 
+        element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/insights" 
+        element={
+          <ProtectedRoute>
+            <AllInsights />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/product/:productId" 
+        element={
+          <ProtectedRoute>
+            <ProductDetails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/rerouting-status" 
+        element={
+          <ProtectedRoute>
+            <ReroutingStatus />
+          </ProtectedRoute>
+        } 
+      />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-      <WarehouseProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/south/dashboard" element={<SouthDashboard />} />
-              <Route path="/east/dashboard" element={<EastDashboard />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/insights" element={<AllInsights />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/product/:productId" element={<ProductDetails />} />
-              <Route path="/rerouting-status" element={<ReroutingStatus />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </WarehouseProvider>
+      <AuthProvider>
+        <WarehouseProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </WarehouseProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
