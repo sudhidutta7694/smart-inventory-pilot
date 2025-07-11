@@ -13,32 +13,13 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Package, TrendingUp, TrendingDown, Minus, Edit, Trash2, Plus } from "lucide-react";
-import { InventoryModal } from "../inventory/InventoryModal";
-import { DeleteConfirmDialog } from "../inventory/DeleteConfirmDialog";
+import InventoryModal from "../inventory/InventoryModal";
+import DeleteConfirmDialog from "../inventory/DeleteConfirmDialog";
 import { useToast } from "@/hooks/use-toast";
-import { useInventory } from "@/contexts/InventoryContext";
-
-// Updated Product type to match Supabase schema
-type Product = {
-  id: string;
-  product_name: string;
-  sku: string;
-  category: string;
-  stock_level: number;
-  reorder_point: number;
-  unit_cost: number;
-  supplier: string;
-  warehouse: string;
-  zone: string;
-  demand_trend: string;
-  forecast_demand: number;
-  last_replenished: string;
-  created_at?: string;
-  updated_at?: string;
-};
+import { useInventory, type Product } from "@/contexts/InventoryContext";
 
 const InventoryTable = () => {
-  const { inventory, loading, addInventoryItem, updateInventoryItem, deleteInventoryItem, refreshInventory } = useInventory();
+  const { products, addProduct, updateProduct, deleteProduct, isLoading, refreshProducts } = useInventory();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -47,18 +28,18 @@ const InventoryTable = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    refreshInventory();
-  }, [refreshInventory]);
+    refreshProducts();
+  }, [refreshProducts]);
 
-  const filteredProducts = inventory.filter(product =>
+  const filteredProducts = products.filter(product =>
     product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.supplier.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const lowStockCount = inventory.filter(product => product.stock_level <= product.reorder_point).length;
-  const totalValue = inventory.reduce((sum, product) => sum + (product.stock_level * product.unit_cost), 0);
+  const lowStockCount = products.filter(product => product.stock_level <= product.reorder_point).length;
+  const totalValue = products.reduce((sum, product) => sum + (product.stock_level * product.unit_cost), 0);
 
   const handleAddProduct = () => {
     setEditingProduct(null);
@@ -78,7 +59,7 @@ const InventoryTable = () => {
   const confirmDelete = async () => {
     if (productToDelete) {
       try {
-        await deleteInventoryItem(productToDelete.id);
+        await deleteProduct(productToDelete.id);
         toast({
           title: "Success",
           description: "Product deleted successfully",
@@ -95,17 +76,16 @@ const InventoryTable = () => {
     setProductToDelete(null);
   };
 
-  // Updated function signature to match the expected Product type
   const handleSaveProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       if (editingProduct) {
-        await updateInventoryItem(editingProduct.id, productData);
+        await updateProduct(editingProduct.id, productData);
         toast({
           title: "Success",
           description: "Product updated successfully",
         });
       } else {
-        await addInventoryItem(productData);
+        await addProduct(productData);
         toast({
           title: "Success", 
           description: "Product added successfully",
@@ -143,7 +123,7 @@ const InventoryTable = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
@@ -175,7 +155,7 @@ const InventoryTable = () => {
             <CardContent>
               <div className="flex items-center space-x-2">
                 <Package className="h-4 w-4 text-blue-600" />
-                <span className="text-2xl font-bold">{inventory.length}</span>
+                <span className="text-2xl font-bold">{products.length}</span>
               </div>
             </CardContent>
           </Card>
@@ -273,20 +253,18 @@ const InventoryTable = () => {
       </Card>
 
       <InventoryModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingProduct(null);
-        }}
-        onSave={handleSaveProduct}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
         product={editingProduct}
+        onSave={handleSaveProduct}
+        mode={editingProduct ? 'edit' : 'add'}
       />
 
       <DeleteConfirmDialog
-        isOpen={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        product={productToDelete}
         onConfirm={confirmDelete}
-        productName={productToDelete?.product_name || ""}
       />
     </div>
   );
