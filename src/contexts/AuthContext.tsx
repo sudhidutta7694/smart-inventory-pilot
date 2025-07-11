@@ -187,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isAuthenticated = !!session && !!user;
+  const isAuthenticated = !!session;
 
   return (
     <AuthContext.Provider value={{ 

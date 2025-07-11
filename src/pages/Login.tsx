@@ -21,11 +21,11 @@ const Login = () => {
   useEffect(() => {
     console.log('Login useEffect triggered:', { isAuthenticated, user, warehouse: user?.warehouse });
     
+    // Only redirect when we have both authentication AND user data with warehouse
     if (isAuthenticated && user && user.warehouse) {
       const dashboardPath = `/${user.warehouse.toLowerCase()}/dashboard`;
       console.log('Redirecting user to:', dashboardPath);
       
-      // Use navigate without timeout first
       navigate(dashboardPath);
     }
   }, [isAuthenticated, user, navigate]);
