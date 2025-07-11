@@ -19,12 +19,14 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Login useEffect triggered:', { isAuthenticated, user, warehouse: user?.warehouse });
+    
     if (isAuthenticated && user && user.warehouse) {
-      console.log('Redirecting user to:', `/${user.warehouse.toLowerCase()}/dashboard`);
-      // Small delay to ensure auth state is fully settled
-      setTimeout(() => {
-        navigate(`/${user.warehouse.toLowerCase()}/dashboard`);
-      }, 100);
+      const dashboardPath = `/${user.warehouse.toLowerCase()}/dashboard`;
+      console.log('Redirecting user to:', dashboardPath);
+      
+      // Use navigate without timeout first
+      navigate(dashboardPath);
     }
   }, [isAuthenticated, user, navigate]);
 
