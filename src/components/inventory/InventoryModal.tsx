@@ -32,7 +32,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
     forecast_demand: 0,
     zone: '',
     supplier: '',
-    unit_cost: 0,
     last_replenished: new Date().toISOString().split('T')[0],
     reorder_recommendation: false
   });
@@ -47,7 +46,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         forecast_demand: product.forecast_demand,
         zone: product.zone,
         supplier: product.supplier,
-        unit_cost: product.unit_cost,
         last_replenished: product.last_replenished,
         reorder_recommendation: product.reorder_recommendation
       });
@@ -60,7 +58,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         forecast_demand: 0,
         zone: '',
         supplier: '',
-        unit_cost: 0,
         last_replenished: new Date().toISOString().split('T')[0],
         reorder_recommendation: false
       });
@@ -90,7 +87,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
 
     const productData = {
       ...formData,
-      unit_cost: formData.unit_cost || 0,
       reorder_recommendation: formData.stock <= formData.reorder_point
     };
 
@@ -187,18 +183,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
                 onChange={(e) => setFormData({ ...formData, forecast_demand: parseInt(e.target.value) || 0 })}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="unit_cost">Unit Cost ($)</Label>
-            <Input
-              id="unit_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.unit_cost}
-              onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

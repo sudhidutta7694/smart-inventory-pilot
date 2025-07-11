@@ -1,11 +1,10 @@
 
 import React, { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import EnhancedAIInsightPanel from "@/components/dashboard/EnhancedAIInsightPanel";
-import EnhancedAdminTaskWindow from "@/components/dashboard/EnhancedAdminTaskWindow";
+import AIInsightPanel from "@/components/dashboard/AIInsightPanel";
+import AdminTaskWindow from "@/components/dashboard/AdminTaskWindow";
 import MetricsOverview from "@/components/dashboard/MetricsOverview";
-import EnhancedInventoryTable from "@/components/dashboard/EnhancedInventoryTable";
-import { EnhancedInventoryProvider } from "@/contexts/EnhancedInventoryContext";
+import InventoryTable from "@/components/dashboard/InventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,8 +21,7 @@ const EastDashboard = () => {
   }, [setCurrentWarehouse]);
 
   return (
-    <EnhancedInventoryProvider>
-      <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex">
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
@@ -53,20 +51,19 @@ const EastDashboard = () => {
           
           {/* Top Row - AI Insights & Admin Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <EnhancedAIInsightPanel />
-            <EnhancedAdminTaskWindow />
+            <AIInsightPanel />
+            <AdminTaskWindow />
           </div>
 
           {/* Middle Row - Metrics Overview */}
           <MetricsOverview />
 
           {/* Bottom Row - Inventory Table */}
-          <EnhancedInventoryTable />
+          <InventoryTable />
           
         </main>
       </div>
     </div>
-    </EnhancedInventoryProvider>
   );
 };
 
