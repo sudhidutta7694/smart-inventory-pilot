@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { type Product } from "@/contexts/InventoryContext";
+import { type Product } from "@/data/mockData";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -25,7 +25,7 @@ const DeleteConfirmDialog = ({ open, onOpenChange, product, onConfirm }: DeleteC
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Product</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{product?.product_name}"? This action cannot be undone.
+            Are you sure you want to delete "{product?.name}"? This action cannot be undone.
             This will permanently remove the product from your inventory.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -1,34 +1,14 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './AuthContext';
-import { toast } from '@/hooks/use-toast';
-
-export interface Product {
-  id: string;
-  product_name: string;
-  sku: string;
-  category: string;
-  stock_level: number;
-  reorder_point: number;
-  forecast_demand: number;
-  zone: string;
-  supplier: string;
-  unit_cost: number;
-  demand_trend: string;
-  last_replenished: string;
-  warehouse: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { products as initialProducts, type Product } from '@/data/mockData';
 
 interface InventoryContextType {
   products: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
-  deleteProduct: (id: string) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>) => void;
+  updateProduct: (id: string, updates: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+  refreshProducts: () => void;
   isLoading: boolean;
-  refreshProducts: () => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -41,209 +21,110 @@ export const useInventory = () => {
   return context;
 };
 
+const STORAGE_KEY = 'supplychain_inventory';
+
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user, isAuthenticated } = useAuth();
 
-  const fetchProducts = async () => {
-    if (!isAuthenticated || !user) {
-      setProducts([]);
-      setIsLoading(false);
-      return;
-    }
-
+  // Load products from localStorage or use initial data
+  const loadProducts = useCallback(() => {
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .eq('warehouse', user.warehouse)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch inventory data",
-          variant: "destructive"
-        });
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsedProducts = JSON.parse(stored);
+        setProducts(parsedProducts);
       } else {
-        const mappedProducts = data?.map(item => ({
-          id: item.id,
-          product_name: item.product_name,
-          sku: item.sku,
-          category: item.category,
-          stock_level: item.stock_level,
-          reorder_point: item.reorder_point,
-          forecast_demand: item.forecast_demand,
-          zone: item.zone,
-          supplier: item.supplier,
-          unit_cost: Number(item.unit_cost),
-          demand_trend: item.demand_trend,
-          last_replenished: item.last_replenished,
-          warehouse: item.warehouse,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        })) || [];
-        setProducts(mappedProducts);
+        // Initialize with mock data
+        setProducts(initialProducts);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProducts));
       }
     } catch (error) {
-      console.error('Error in fetchProducts:', error);
+      console.error('Error loading products:', error);
+      setProducts(initialProducts);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const refreshProducts = async () => {
-    await fetchProducts();
-  };
+  // Save products to localStorage
+  const saveProducts = useCallback((newProducts: Product[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newProducts));
+      setProducts(newProducts);
+      
+      // Dispatch custom event for cross-component sync
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', { 
+        detail: { products: newProducts } 
+      }));
+    } catch (error) {
+      console.error('Error saving products:', error);
+    }
+  }, []);
 
+  // Add new product
+  const addProduct = useCallback((productData: Omit<Product, 'id'>) => {
+    const newProduct: Product = {
+      ...productData,
+      id: `SKU${String(Date.now()).slice(-6)}`, // Generate unique ID
+    };
+    
+    const updatedProducts = [...products, newProduct];
+    saveProducts(updatedProducts);
+  }, [products, saveProducts]);
+
+  // Update existing product
+  const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
+    const updatedProducts = products.map(product =>
+      product.id === id ? { ...product, ...updates } : product
+    );
+    saveProducts(updatedProducts);
+  }, [products, saveProducts]);
+
+  // Delete product
+  const deleteProduct = useCallback((id: string) => {
+    const updatedProducts = products.filter(product => product.id !== id);
+    saveProducts(updatedProducts);
+  }, [products, saveProducts]);
+
+  // Refresh products (for real-time sync)
+  const refreshProducts = useCallback(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // Listen for storage changes from other tabs/components
   useEffect(() => {
-    fetchProducts();
-  }, [isAuthenticated, user]);
-
-  // Set up realtime subscription
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-
-    const channel = supabase
-      .channel('inventory-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inventory',
-          filter: `warehouse=eq.${user.warehouse}`
-        },
-        (payload) => {
-          console.log('Inventory change received:', payload);
-          fetchProducts(); // Refresh products on any change
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const newProducts = JSON.parse(e.newValue);
+          setProducts(newProducts);
+        } catch (error) {
+          console.error('Error parsing storage change:', error);
         }
-      )
-      .subscribe();
+      }
+    };
+
+    const handleInventoryUpdate = (e: CustomEvent) => {
+      if (e.detail?.products) {
+        setProducts(e.detail.products);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('inventoryUpdated', handleInventoryUpdate as EventListener);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('inventoryUpdated', handleInventoryUpdate as EventListener);
     };
-  }, [isAuthenticated, user]);
+  }, []);
 
-  const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('inventory')
-        .insert([{
-          product_name: productData.product_name,
-          sku: productData.sku,
-          category: productData.category,
-          stock_level: productData.stock_level,
-          reorder_point: productData.reorder_point,
-          forecast_demand: productData.forecast_demand,
-          zone: productData.zone,
-          supplier: productData.supplier,
-          unit_cost: productData.unit_cost,
-          demand_trend: productData.demand_trend,
-          last_replenished: productData.last_replenished,
-          warehouse: user.warehouse
-        }]);
-
-      if (error) {
-        console.error('Error adding product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to add product",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Product added successfully"
-        });
-      }
-    } catch (error) {
-      console.error('Error in addProduct:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add product",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const updateProduct = async (id: string, updates: Partial<Product>) => {
-    try {
-      const { error } = await supabase
-        .from('inventory')
-        .update({
-          product_name: updates.product_name,
-          sku: updates.sku,
-          category: updates.category,
-          stock_level: updates.stock_level,
-          reorder_point: updates.reorder_point,
-          forecast_demand: updates.forecast_demand,
-          zone: updates.zone,
-          supplier: updates.supplier,
-          unit_cost: updates.unit_cost,
-          demand_trend: updates.demand_trend,
-          last_replenished: updates.last_replenished,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error updating product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update product",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Product updated successfully"
-        });
-      }
-    } catch (error) {
-      console.error('Error in updateProduct:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update product",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const deleteProduct = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete product",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Product deleted successfully"
-        });
-      }
-    } catch (error) {
-      console.error('Error in deleteProduct:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete product",
-        variant: "destructive"
-      });
-    }
-  };
+  // Load products on mount
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   return (
     <InventoryContext.Provider value={{
@@ -251,8 +132,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       addProduct,
       updateProduct,
       deleteProduct,
-      isLoading,
-      refreshProducts
+      refreshProducts,
+      isLoading
     }}>
       {children}
     </InventoryContext.Provider>
