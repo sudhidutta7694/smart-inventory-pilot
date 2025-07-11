@@ -1,13 +1,14 @@
 
 import React, { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import AIInsightPanel from "@/components/dashboard/AIInsightPanel";
-import AdminTaskWindow from "@/components/dashboard/AdminTaskWindow";
+import EnhancedAIInsightPanel from "@/components/dashboard/EnhancedAIInsightPanel";
+import EnhancedAdminTaskWindow from "@/components/dashboard/EnhancedAdminTaskWindow";
 import MetricsOverview from "@/components/dashboard/MetricsOverview";
-import InventoryTable from "@/components/dashboard/InventoryTable";
+import EnhancedInventoryTable from "@/components/dashboard/EnhancedInventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSupplyChainStore } from "@/stores/supplyChainStore";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -15,10 +16,12 @@ const SouthDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { setCurrentWarehouse } = useWarehouse();
   const { user, logout } = useAuth();
+  const { setActiveWarehouse } = useSupplyChainStore();
 
   useEffect(() => {
     setCurrentWarehouse('South');
-  }, [setCurrentWarehouse]);
+    setActiveWarehouse('South');
+  }, [setCurrentWarehouse, setActiveWarehouse]);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -51,15 +54,15 @@ const SouthDashboard = () => {
           
           {/* Top Row - AI Insights & Admin Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AIInsightPanel />
-            <AdminTaskWindow />
+            <EnhancedAIInsightPanel />
+            <EnhancedAdminTaskWindow />
           </div>
 
           {/* Middle Row - Metrics Overview */}
           <MetricsOverview />
 
           {/* Bottom Row - Inventory Table */}
-          <InventoryTable />
+          <EnhancedInventoryTable />
           
         </main>
       </div>
