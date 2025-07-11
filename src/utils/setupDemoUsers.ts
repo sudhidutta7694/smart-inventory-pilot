@@ -30,7 +30,7 @@ export const setupDemoUsers = async () => {
         .from('users')
         .select('email')
         .eq('email', user.email)
-        .single();
+        .maybeSingle();
 
       if (existingUser) {
         console.log(`Demo user ${user.email} already exists`);
