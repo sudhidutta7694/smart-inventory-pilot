@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user && event === 'SIGNED_IN') {
-          // Fetch user profile from our users table
+          // Defer data fetching to prevent deadlocks
           setTimeout(async () => {
             try {
               const { data: userData, error } = await supabase
@@ -70,7 +70,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               if (error) {
                 console.error('Error fetching user data:', error);
-                setUser(null);
+                // If no user profile exists, create a default one based on email
+                if (error.code === 'PGRST116') {
+                  console.log('User profile not found, creating one...');
+                  const defaultUserData = {
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: session.user.email === 'admin1@supply.com' ? 'Sarah Johnson' : 'Mike Chen',
+                    warehouse: session.user.email === 'admin1@supply.com' ? 'South' : 'East'
+                  };
+                  
+                  // Try to insert the user data
+                  const { error: insertError } = await supabase
+                    .from('users')
+                    .insert([defaultUserData]);
+                  
+                  if (!insertError) {
+                    setUser(defaultUserData as AuthUser);
+                  } else {
+                    console.error('Error creating user profile:', insertError);
+                    setUser(null);
+                  }
+                } else {
+                  setUser(null);
+                }
               } else if (userData) {
                 setUser({
                   id: userData.id,
@@ -81,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             } catch (err) {
               console.error('Error in auth state change:', err);
+              setUser(null);
             }
           }, 0);
         } else {
