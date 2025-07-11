@@ -19,8 +19,12 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      navigate(`/${user.warehouse.toLowerCase()}/dashboard`);
+    if (isAuthenticated && user && user.warehouse) {
+      console.log('Redirecting user to:', `/${user.warehouse.toLowerCase()}/dashboard`);
+      // Small delay to ensure auth state is fully settled
+      setTimeout(() => {
+        navigate(`/${user.warehouse.toLowerCase()}/dashboard`);
+      }, 100);
     }
   }, [isAuthenticated, user, navigate]);
 

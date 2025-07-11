@@ -86,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     .insert([defaultUserData]);
                   
                   if (!insertError) {
+                    console.log('User profile created successfully:', defaultUserData);
                     setUser(defaultUserData as AuthUser);
                   } else {
                     console.error('Error creating user profile:', insertError);
@@ -95,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   setUser(null);
                 }
               } else if (userData) {
+                console.log('User data loaded successfully:', userData);
                 setUser({
                   id: userData.id,
                   email: userData.email,
@@ -106,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               console.error('Error in auth state change:', err);
               setUser(null);
             }
-          }, 0);
+          }, 100); // Increased timeout slightly for better reliability
         } else {
           setUser(null);
         }
