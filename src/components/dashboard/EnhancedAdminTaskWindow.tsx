@@ -359,7 +359,8 @@ const EnhancedAdminTaskWindow = () => {
         onSave={(taskData) => {
           addTask({
             ...taskData,
-            warehouse: activeWarehouse
+            warehouse: activeWarehouse,
+            description: taskData.description || ''
           });
           toast({
             title: "Task Created", 

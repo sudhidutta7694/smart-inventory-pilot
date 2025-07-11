@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import EnhancedAIInsightPanel from "@/components/dashboard/EnhancedAIInsightPanel";
 import EnhancedAdminTaskWindow from "@/components/dashboard/EnhancedAdminTaskWindow";
-import MetricsOverview from "@/components/dashboard/MetricsOverview";
+import EnhancedMetricsOverview from "@/components/dashboard/EnhancedMetricsOverview";
 import EnhancedInventoryTable from "@/components/dashboard/EnhancedInventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
@@ -59,7 +59,7 @@ const EastDashboard = () => {
           </div>
 
           {/* Middle Row - Metrics Overview */}
-          <MetricsOverview />
+          <EnhancedMetricsOverview />
 
           {/* Bottom Row - Inventory Table */}
           <EnhancedInventoryTable />

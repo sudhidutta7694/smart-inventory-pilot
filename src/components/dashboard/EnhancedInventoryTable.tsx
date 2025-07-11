@@ -398,6 +398,7 @@ const EnhancedInventoryTable = () => {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
+        product={productToDelete}
       />
     </motion.div>
   );
