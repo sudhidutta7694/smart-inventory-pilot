@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,19 +21,21 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  MoreHorizontal,
   ArrowUpDown,
   Eye,
   Plus,
   Edit,
   Trash2
 } from "lucide-react";
-import { zones, categories, suppliers, type Product } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useInventory } from "@/contexts/InventoryContext";
+import { useInventory, Product } from "@/contexts/InventoryContext";
 import InventoryModal from "@/components/inventory/InventoryModal";
 import DeleteConfirmDialog from "@/components/inventory/DeleteConfirmDialog";
+
+const categories = ["All", "Electronics", "Machinery", "Safety Equipment", "Components", "Tools", "Hardware", "Materials"];
+const zones = ["All", "Zone A", "Zone B", "Zone C"];
+const suppliers = ["All", "HydroTech Solutions", "MetalWorks Inc", "SafeGuard Corp", "PowerTech Ltd", "SealPro Industries", "FlowControl Systems", "LightMetal Co", "ElectroSafe Inc", "ConnectPro Ltd"];
 
 const InventoryTable = () => {
   const navigate = useNavigate();
@@ -42,7 +45,7 @@ const InventoryTable = () => {
   const [selectedZone, setSelectedZone] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSupplier, setSelectedSupplier] = useState("All");
-  const [sortField, setSortField] = useState<keyof Product>("name");
+  const [sortField, setSortField] = useState<keyof Product>("product_name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Modal states
@@ -54,8 +57,8 @@ const InventoryTable = () => {
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products.filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           product.sku.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesZone = selectedZone === "All" || product.zone === selectedZone;
       const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
       const matchesSupplier = selectedSupplier === "All" || product.supplier === selectedSupplier;
@@ -119,28 +122,24 @@ const InventoryTable = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleSaveProduct = (productData: Omit<Product, 'id'> | Product) => {
+  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> | Product) => {
     if (modalMode === 'add') {
-      addProduct(productData as Omit<Product, 'id'>);
+      await addProduct(productData as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
     } else {
-      updateProduct(selectedProduct!.id, productData);
+      await updateProduct(selectedProduct!.id, productData);
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      deleteProduct(productToDelete.id);
-      toast({
-        title: "Product Deleted",
-        description: `${productToDelete.name} has been removed from inventory.`,
-      });
+      await deleteProduct(productToDelete.id);
       setDeleteDialogOpen(false);
       setProductToDelete(null);
     }
   };
 
   const getStockStatus = (product: Product) => {
-    const stockLevel = (product.stock / product.reorder_point) * 100;
+    const stockLevel = (product.stock_level / product.reorder_point) * 100;
     
     if (stockLevel <= 75) {
       return { status: "Critical", color: "destructive", icon: <AlertTriangle className="h-3 w-3" /> };
@@ -273,9 +272,9 @@ const InventoryTable = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
-                  <TableHead><SortButton field="name">Product</SortButton></TableHead>
+                  <TableHead><SortButton field="product_name">Product</SortButton></TableHead>
                   <TableHead><SortButton field="category">Category</SortButton></TableHead>
-                  <TableHead><SortButton field="stock">Stock Level</SortButton></TableHead>
+                  <TableHead><SortButton field="stock_level">Stock Level</SortButton></TableHead>
                   <TableHead><SortButton field="forecast_demand">7-Day Forecast</SortButton></TableHead>
                   <TableHead>Demand Trend</TableHead>
                   <TableHead><SortButton field="zone">Zone</SortButton></TableHead>
@@ -286,7 +285,8 @@ const InventoryTable = () => {
               <TableBody>
                 {filteredAndSortedProducts.map((product, index) => {
                   const stockStatus = getStockStatus(product);
-                  const demandTrend = getDemandTrend(product.stock, product.forecast_demand);
+                  const demandTrend = getDemandTrend(product.stock_level, product.forecast_demand);
+                  const reorderRecommendation = product.stock_level <= product.reorder_point;
                   
                   return (
                     <TableRow key={product.id} className="hover:bg-muted/50">
@@ -294,8 +294,8 @@ const InventoryTable = () => {
                       
                       <TableCell>
                         <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.id}</p>
+                          <p className="font-medium">{product.product_name}</p>
+                          <p className="text-sm text-muted-foreground">{product.sku}</p>
                         </div>
                       </TableCell>
                       
@@ -305,7 +305,7 @@ const InventoryTable = () => {
                       
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium">{product.stock}</span>
+                          <span className="font-medium">{product.stock_level}</span>
                           <Badge 
                             variant={stockStatus.color as any}
                             className="text-xs"
@@ -326,7 +326,7 @@ const InventoryTable = () => {
                             <div 
                               className="bg-primary h-2 rounded-full transition-all duration-300"
                               style={{ 
-                                width: `${Math.min(100, (product.forecast_demand / Math.max(product.stock, product.forecast_demand)) * 100)}%` 
+                                width: `${Math.min(100, (product.forecast_demand / Math.max(product.stock_level, product.forecast_demand)) * 100)}%` 
                               }}
                             />
                           </div>
@@ -382,11 +382,11 @@ const InventoryTable = () => {
                             Delete
                           </Button>
                           
-                          {product.reorder_recommendation && (
+                          {reorderRecommendation && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleReorder(product.id, product.name)}
+                              onClick={() => handleReorder(product.id, product.product_name)}
                               className="h-8 px-2 text-xs"
                             >
                               Reorder
