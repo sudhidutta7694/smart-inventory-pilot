@@ -1,14 +1,16 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, BarChart3, Package, Users, Zap } from "lucide-react";
+import SetupDemo from "@/components/SetupDemo";
 
 const Index = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
+  const [showDemoSetup, setShowDemoSetup] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -35,15 +37,31 @@ const Index = () => {
             Real-time inventory management, AI-powered insights, and seamless warehouse coordination
             for modern supply chains.
           </p>
-          <Button 
-            size="lg" 
-            onClick={() => navigate("/login")}
-            className="inline-flex items-center"
-          >
-            Access Dashboard
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              size="lg" 
+              onClick={() => navigate("/login")}
+              className="inline-flex items-center"
+            >
+              Access Dashboard
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => setShowDemoSetup(!showDemoSetup)}
+              className="inline-flex items-center"
+            >
+              {showDemoSetup ? 'Hide' : 'Setup'} Demo Users
+            </Button>
+          </div>
         </div>
+
+        {showDemoSetup && (
+          <div className="mb-16">
+            <SetupDemo />
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <Card className="text-center">
