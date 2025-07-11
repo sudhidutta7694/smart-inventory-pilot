@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,11 +121,11 @@ const InventoryTable = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> | Product) => {
+  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     if (modalMode === 'add') {
-      await addProduct(productData as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
-    } else {
-      await updateProduct(selectedProduct!.id, productData);
+      await addProduct(productData);
+    } else if (selectedProduct) {
+      await updateProduct(selectedProduct.id, productData);
     }
   };
 
