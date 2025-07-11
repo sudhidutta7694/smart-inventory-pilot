@@ -320,7 +320,7 @@ const AdminTaskWindow = () => {
       <NewTaskDialog 
         open={isNewTaskDialogOpen}
         onOpenChange={setIsNewTaskDialogOpen}
-        onSave={handleNewTask}
+        onTaskCreate={handleNewTask}
       />
     </>
   );

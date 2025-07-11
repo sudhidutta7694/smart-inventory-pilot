@@ -1,14 +1,13 @@
 
 import React, { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import EnhancedAIInsightPanel from "@/components/dashboard/EnhancedAIInsightPanel";
-import EnhancedAdminTaskWindow from "@/components/dashboard/EnhancedAdminTaskWindow";
-import EnhancedMetricsOverview from "@/components/dashboard/EnhancedMetricsOverview";
-import EnhancedInventoryTable from "@/components/dashboard/EnhancedInventoryTable";
+import AIInsightPanel from "@/components/dashboard/AIInsightPanel";
+import AdminTaskWindow from "@/components/dashboard/AdminTaskWindow";
+import MetricsOverview from "@/components/dashboard/MetricsOverview";
+import InventoryTable from "@/components/dashboard/InventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSupplyChainStore } from "@/stores/supplyChainStore";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -16,12 +15,10 @@ const EastDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { setCurrentWarehouse } = useWarehouse();
   const { user, logout } = useAuth();
-  const { setActiveWarehouse } = useSupplyChainStore();
 
   useEffect(() => {
     setCurrentWarehouse('East');
-    setActiveWarehouse('East');
-  }, [setCurrentWarehouse, setActiveWarehouse]);
+  }, [setCurrentWarehouse]);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -54,15 +51,15 @@ const EastDashboard = () => {
           
           {/* Top Row - AI Insights & Admin Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <EnhancedAIInsightPanel />
-            <EnhancedAdminTaskWindow />
+            <AIInsightPanel />
+            <AdminTaskWindow />
           </div>
 
           {/* Middle Row - Metrics Overview */}
-          <EnhancedMetricsOverview />
+          <MetricsOverview />
 
           {/* Bottom Row - Inventory Table */}
-          <EnhancedInventoryTable />
+          <InventoryTable />
           
         </main>
       </div>

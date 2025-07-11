@@ -21,17 +21,17 @@ import { cn } from "@/lib/utils";
 interface NewTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (taskData: {
+  onTaskCreate: (taskData: {
     title: string;
-    type: 'restock' | 'reroute' | 'maintenance' | 'quality' | 'audit';
+    type: 'reorder' | 'reroute' | 'flag' | 'report';
     priority: 'high' | 'medium' | 'low';
-    dueDate?: string;
+    dueDate: string;
     description?: string;
-    status: 'pending';
+    assignee?: string;
   }) => void;
 }
 
-export function NewTaskDialog({ open, onOpenChange, onSave }: NewTaskDialogProps) {
+export function NewTaskDialog({ open, onOpenChange, onTaskCreate }: NewTaskDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     type: "",
@@ -72,14 +72,14 @@ export function NewTaskDialog({ open, onOpenChange, onSave }: NewTaskDialogProps
 
     const taskData = {
       title: formData.title,
-      type: formData.type as 'restock' | 'reroute' | 'maintenance' | 'quality' | 'audit',
+      type: formData.type as 'reorder' | 'reroute' | 'flag' | 'report',
       priority: formData.priority as 'high' | 'medium' | 'low',
-      dueDate: formData.dueDate?.toISOString(),
+      dueDate: formData.dueDate?.toISOString().split('T')[0] || '',
       description: formData.description,
-      status: 'pending' as const
+      assignee: formData.assignee || 'Admin User',
     };
 
-    onSave(taskData);
+    onTaskCreate(taskData);
 
     // Reset form
     setFormData({
@@ -139,11 +139,10 @@ export function NewTaskDialog({ open, onOpenChange, onSave }: NewTaskDialogProps
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="restock">Restock Items</SelectItem>
-                  <SelectItem value="reroute">Reroute Stock</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="quality">Quality Check</SelectItem>
-                  <SelectItem value="audit">Audit</SelectItem>
+                  <SelectItem value="reorder">Reorder Stock</SelectItem>
+                  <SelectItem value="reroute">Reroute Shipment</SelectItem>
+                  <SelectItem value="flag">Flag Issue</SelectItem>
+                  <SelectItem value="report">Generate Report</SelectItem>
                 </SelectContent>
               </Select>
               {errors.type && (

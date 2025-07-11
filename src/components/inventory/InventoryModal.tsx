@@ -33,8 +33,7 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
     zone: '',
     supplier: '',
     last_replenished: new Date().toISOString().split('T')[0],
-    reorder_recommendation: false,
-    unit_cost: 0
+    reorder_recommendation: false
   });
 
   useEffect(() => {
@@ -48,8 +47,7 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         zone: product.zone,
         supplier: product.supplier,
         last_replenished: product.last_replenished,
-        reorder_recommendation: product.reorder_recommendation,
-        unit_cost: product.unit_cost
+        reorder_recommendation: product.reorder_recommendation
       });
     } else if (mode === 'add') {
       setFormData({
@@ -61,8 +59,7 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         zone: '',
         supplier: '',
         last_replenished: new Date().toISOString().split('T')[0],
-        reorder_recommendation: false,
-        unit_cost: 0
+        reorder_recommendation: false
       });
     }
   }, [mode, product, open]);
@@ -186,19 +183,6 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
                 onChange={(e) => setFormData({ ...formData, forecast_demand: parseInt(e.target.value) || 0 })}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="unit_cost">Unit Cost ($)</Label>
-            <Input
-              id="unit_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.unit_cost}
-              onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-              placeholder="0.00"
-            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
