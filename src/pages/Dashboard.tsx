@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import AIInsightPanel from "@/components/dashboard/AIInsightPanel";
@@ -12,7 +13,8 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar 
         collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        warehouse="South"
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">

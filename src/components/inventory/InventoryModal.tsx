@@ -5,20 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInventory } from '@/contexts/InventoryContext';
 import { categories, zones, suppliers } from '@/data/mockData';
 import { Product } from '@/data/mockData';
 
 interface InventoryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product?: Product;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  product?: Product | null;
+  onSave: (productData: Omit<Product, 'id'> | Product) => void;
   mode: 'add' | 'edit';
 }
 
-const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, product, mode }) => {
-  const { addProduct, updateProduct } = useInventory();
-  
+const InventoryModal: React.FC<InventoryModalProps> = ({ open, onOpenChange, product, mode, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -60,18 +58,12 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, produc
         unit_cost: 0
       });
     }
-  }, [product, mode, isOpen]);
+  }, [product, mode, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (mode === 'add') {
-      addProduct(formData);
-    } else if (mode === 'edit' && product) {
-      updateProduct(product.id, formData);
-    }
-    
-    onClose();
+    onSave(formData);
+    onOpenChange(false);
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -82,7 +74,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, produc
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -206,7 +198,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, produc
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit">
