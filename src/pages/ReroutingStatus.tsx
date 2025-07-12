@@ -20,20 +20,25 @@ import {
   Search,
   ArrowRight,
   AlertCircle,
-  Play,
   MapPin
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useWarehouse } from "@/contexts/WarehouseContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { useLocation } from "react-router-dom";
 
 const ReroutingStatus: React.FC = () => {
-  const { rerouteRequests } = useWarehouse();
-  const { user, logout } = useAuth();
+  const { rerouteRequests } = useWarehouseContext();
+  const location = useLocation();
+  const warehouse = location.pathname.includes('/south') ? 'South' : 'East';
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    window.location.href = '/';
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -154,7 +159,7 @@ const ReroutingStatus: React.FC = () => {
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        warehouse="South"
+        warehouse={warehouse}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -162,13 +167,13 @@ const ReroutingStatus: React.FC = () => {
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-14 items-center justify-between px-6">
             <div className="flex items-center space-x-4">
-              <h1 className="text-lg font-semibold">{user?.warehouse} Warehouse - Rerouting Status</h1>
+              <h1 className="text-lg font-semibold">{warehouse} Warehouse - Rerouting Status</h1>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">
-                {user?.name}
+                {warehouse} Admin
               </span>
-              <Button variant="ghost" size="sm" onClick={logout}>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
             </div>

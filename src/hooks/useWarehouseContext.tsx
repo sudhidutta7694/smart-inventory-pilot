@@ -6,12 +6,17 @@ import { useEastWarehouse } from '@/contexts/EastWarehouseContext';
 export const useWarehouseContext = () => {
   const location = useLocation();
   
-  if (location.pathname.includes('/south')) {
+  try {
+    if (location.pathname.includes('/south')) {
+      return useSouthWarehouse();
+    } else if (location.pathname.includes('/east')) {
+      return useEastWarehouse();
+    }
+    
+    // Fallback to South if route doesn't specify
     return useSouthWarehouse();
-  } else if (location.pathname.includes('/east')) {
-    return useEastWarehouse();
+  } catch (error) {
+    // If no context is available, return null or throw a more descriptive error
+    throw new Error(`Warehouse context not available for route: ${location.pathname}`);
   }
-  
-  // Fallback to South if route doesn't specify
-  return useSouthWarehouse();
 };

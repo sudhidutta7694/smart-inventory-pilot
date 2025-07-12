@@ -20,7 +20,6 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  MoreHorizontal,
   ArrowUpDown,
   Eye,
   Plus,
@@ -30,13 +29,13 @@ import {
 import { zones, categories, suppliers, type Product } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useInventory } from "@/contexts/InventoryContext";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import InventoryModal from "@/components/inventory/InventoryModal";
 import DeleteConfirmDialog from "@/components/inventory/DeleteConfirmDialog";
 
 const InventoryTable = () => {
   const navigate = useNavigate();
-  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useInventory();
+  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useWarehouseContext();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("All");
