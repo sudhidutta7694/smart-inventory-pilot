@@ -14,17 +14,25 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/AuthContext";
+
+interface User {
+  id: string;
+  username: string;
+  name: string;
+  warehouse: 'South' | 'East';
+  role: 'admin';
+}
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  user?: User | null;
+  onLogout?: () => void;
 }
 
-const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
+const Sidebar = ({ collapsed, onToggle, user, onLogout }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
 
   const warehouseRoute = user?.warehouse.toLowerCase() || 'south';
 
@@ -64,7 +72,9 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    logout();
+    if (onLogout) {
+      onLogout();
+    }
     navigate('/');
   };
 

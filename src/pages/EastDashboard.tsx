@@ -7,14 +7,14 @@ import MetricsOverview from "@/components/dashboard/MetricsOverview";
 import InventoryTable from "@/components/dashboard/InventoryTable";
 import { NotificationsPanel } from "@/components/rerouting/NotificationsPanel";
 import { useWarehouse } from "@/contexts/WarehouseContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthEast } from "@/contexts/AuthEastContext";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 const EastDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { setCurrentWarehouse } = useWarehouse();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthEast();
 
   useEffect(() => {
     setCurrentWarehouse('East');
@@ -24,7 +24,9 @@ const EastDashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar 
         collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        user={user}
+        onLogout={logout}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">

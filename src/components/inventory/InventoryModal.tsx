@@ -1,245 +1,176 @@
-
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import { categories, zones, suppliers, type Product } from "@/data/mockData";
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { useForm, Controller } from "react-hook-form"
+import { Product } from "@/data/mockData";
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 
 interface InventoryModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  product?: Product | null;
-  onSave: (product: Omit<Product, 'id'> | Product) => void;
-  mode: 'add' | 'edit';
+  product: Product;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
 }
 
-const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: InventoryModalProps) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    stock: 0,
-    reorder_point: 0,
-    forecast_demand: 0,
-    zone: '',
-    supplier: '',
-    last_replenished: new Date().toISOString().split('T')[0],
-    reorder_recommendation: false
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Product name must be at least 2 characters.",
+  }),
+  category: z.string().min(2, {
+    message: "Category must be at least 2 characters.",
+  }),
+  stock: z.number().min(0, {
+    message: "Stock must be a positive number.",
+  }),
+  forecast_demand: z.number().min(0, {
+    message: "Forecast demand must be a positive number.",
+  }),
+  reorder_point: z.number().min(0, {
+    message: "Reorder point must be a positive number.",
+  }),
+  supplier: z.string().min(2, {
+    message: "Supplier must be at least 2 characters.",
+  }),
+  unit_cost: z.number().min(0, {
+    message: "Unit cost must be a positive number.",
+  }),
+});
+
+type FormData = z.infer<typeof formSchema>
+
+const InventoryModal = ({ product, isOpen, onClose, onSave }: InventoryModalProps) => {
+  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: product.name,
+      category: product.category,
+      stock: product.stock,
+      forecast_demand: product.forecast_demand,
+      reorder_point: product.reorder_point,
+      supplier: product.supplier,
+      unit_cost: product.unit_cost,
+    }
   });
 
-  useEffect(() => {
-    if (mode === 'edit' && product) {
-      setFormData({
-        name: product.name,
-        category: product.category,
-        stock: product.stock,
-        reorder_point: product.reorder_point,
-        forecast_demand: product.forecast_demand,
-        zone: product.zone,
-        supplier: product.supplier,
-        last_replenished: product.last_replenished,
-        reorder_recommendation: product.reorder_recommendation
-      });
-    } else if (mode === 'add') {
-      setFormData({
-        name: '',
-        category: '',
-        stock: 0,
-        reorder_point: 0,
-        forecast_demand: 0,
-        zone: '',
-        supplier: '',
-        last_replenished: new Date().toISOString().split('T')[0],
-        reorder_recommendation: false
-      });
-    }
-  }, [mode, product, open]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.category || !formData.zone || !formData.supplier) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.stock < 0 || formData.reorder_point < 0 || formData.forecast_demand < 0) {
-      toast({
-        title: "Validation Error",
-        description: "Stock values cannot be negative.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const onSubmit = (data: FormData) => {
     const productData = {
-      ...formData,
-      reorder_recommendation: formData.stock <= formData.reorder_point
+      ...data,
+      reorder_recommendation: data.stock <= data.reorder_point,
+      unit_cost: data.unit_cost || 0, // Add default unit_cost if not provided
     };
-
-    if (mode === 'edit' && product) {
-      onSave({ ...product, ...productData });
-    } else {
-      onSave(productData);
-    }
-
-    toast({
-      title: mode === 'add' ? "Product Added" : "Product Updated",
-      description: `${formData.name} has been ${mode === 'add' ? 'added' : 'updated'} successfully.`,
-    });
-
-    onOpenChange(false);
+    
+    onSave(productData);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
-            {mode === 'add' ? 'Add New Product' : 'Edit Product'}
-          </DialogTitle>
+          <DialogTitle>Edit Product</DialogTitle>
           <DialogDescription>
-            {mode === 'add' 
-              ? 'Enter the details for the new product.' 
-              : 'Update the product information below.'
-            }
+            Make changes to your product here. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter product name"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.filter(cat => cat !== 'All').map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Current Stock</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reorder_point">Reorder Point</Label>
-              <Input
-                id="reorder_point"
-                type="number"
-                min="0"
-                value={formData.reorder_point}
-                onChange={(e) => setFormData({ ...formData, reorder_point: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="forecast_demand">7-Day Forecast</Label>
-              <Input
-                id="forecast_demand"
-                type="number"
-                min="0"
-                value={formData.forecast_demand}
-                onChange={(e) => setFormData({ ...formData, forecast_demand: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="zone">Zone *</Label>
-              <Select 
-                value={formData.zone} 
-                onValueChange={(value) => setFormData({ ...formData, zone: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {zones.filter(zone => zone !== 'All').map((zone) => (
-                    <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier *</Label>
-              <Select 
-                value={formData.supplier} 
-                onValueChange={(value) => setFormData({ ...formData, supplier: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.filter(supplier => supplier !== 'All').map((supplier) => (
-                    <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="last_replenished">Last Replenished</Label>
-            <Input
-              id="last_replenished"
-              type="date"
-              value={formData.last_replenished}
-              onChange={(e) => setFormData({ ...formData, last_replenished: e.target.value })}
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Name
+            </Label>
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <Input id="name" placeholder="Product name" {...field} />
+              )}
             />
           </div>
-
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {mode === 'add' ? 'Add Product' : 'Update Product'}
-            </Button>
-          </DialogFooter>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">
+              Category
+            </Label>
+            <Controller
+              name="category"
+              control={control}
+              render={({ field }) => (
+                <Input id="category" placeholder="Category" {...field} />
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="stock" className="text-right">
+              Stock
+            </Label>
+            <Controller
+              name="stock"
+              control={control}
+              render={({ field }) => (
+                <Input type="number" id="stock" placeholder="Stock" {...field} />
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="forecast_demand" className="text-right">
+              Forecast Demand
+            </Label>
+            <Controller
+              name="forecast_demand"
+              control={control}
+              render={({ field }) => (
+                <Input type="number" id="forecast_demand" placeholder="Forecast Demand" {...field} />
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="reorder_point" className="text-right">
+              Reorder Point
+            </Label>
+            <Controller
+              name="reorder_point"
+              control={control}
+              render={({ field }) => (
+                <Input type="number" id="reorder_point" placeholder="Reorder Point" {...field} />
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="supplier" className="text-right">
+              Supplier
+            </Label>
+            <Controller
+              name="supplier"
+              control={control}
+              render={({ field }) => (
+                <Input id="supplier" placeholder="Supplier" {...field} />
+              )}
+            />
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="unit_cost" className="text-right">
+              Unit Cost
+            </Label>
+            <Controller
+              name="unit_cost"
+              control={control}
+              render={({ field }) => (
+                <Input type="number" id="unit_cost" placeholder="Unit Cost" {...field} />
+              )}
+            />
+          </div>
         </form>
+        <DialogFooter>
+          <Button type="submit" onClick={handleSubmit(onSubmit)}>Save changes</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

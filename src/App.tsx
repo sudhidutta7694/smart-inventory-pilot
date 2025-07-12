@@ -3,13 +3,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthSouthProvider, useAuthSouth } from "@/contexts/AuthSouthContext";
+import { AuthEastProvider, useAuthEast } from "@/contexts/AuthEastContext";
 import { WarehouseProvider } from "@/contexts/WarehouseContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import RequireAuth from "@/components/auth/RequireAuth";
+import LandingPage from "./pages/LandingPage";
+import SouthLogin from "./pages/SouthLogin";
+import EastLogin from "./pages/EastLogin";
 import Reports from "./pages/Reports";
 import AllInsights from "./pages/AllInsights";
 import Settings from "./pages/Settings";
@@ -21,95 +24,120 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
+// Route guard components that use the appropriate context
+const SouthWarehouseRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthSouth();
+  
+  return (
+    <RequireAuth 
+      isAuthenticated={isAuthenticated} 
+      redirectTo="/south/login"
+    >
+      {children}
+    </RequireAuth>
+  );
 };
 
-const DashboardRedirect = () => {
-  const { user } = useAuth();
+const EastWarehouseRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthEast();
   
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  return (
+    <RequireAuth 
+      isAuthenticated={isAuthenticated} 
+      redirectTo="/east/login"
+    >
+      {children}
+    </RequireAuth>
+  );
+};
+
+const AnyWarehouseRoute = ({ children }: { children: React.ReactNode }) => {
+  const southAuth = useAuthSouth();
+  const eastAuth = useAuthEast();
   
-  return <Navigate to={`/${user.warehouse.toLowerCase()}/dashboard`} replace />;
+  const isAuthenticated = southAuth.isAuthenticated || eastAuth.isAuthenticated;
+  
+  return (
+    <RequireAuth 
+      isAuthenticated={isAuthenticated} 
+      redirectTo="/"
+    >
+      {children}
+    </RequireAuth>
+  );
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    );
-  }
-
   return (
     <Routes>
-      <Route path="/" element={<DashboardRedirect />} />
-      <Route path="/dashboard" element={<DashboardRedirect />} />
+      {/* Landing page */}
+      <Route path="/" element={<LandingPage />} />
       
+      {/* South warehouse routes */}
+      <Route path="/south/login" element={<SouthLogin />} />
       <Route 
         path="/south/dashboard" 
         element={
-          <ProtectedRoute>
+          <SouthWarehouseRoute>
             <SouthDashboard />
-          </ProtectedRoute>
+          </SouthWarehouseRoute>
         } 
       />
+      
+      {/* East warehouse routes */}
+      <Route path="/east/login" element={<EastLogin />} />
       <Route 
         path="/east/dashboard" 
         element={
-          <ProtectedRoute>
+          <EastWarehouseRoute>
             <EastDashboard />
-          </ProtectedRoute>
+          </EastWarehouseRoute>
         } 
       />
+      
+      {/* Shared routes - accessible from both warehouses */}
       <Route 
         path="/reports" 
         element={
-          <ProtectedRoute>
+          <AnyWarehouseRoute>
             <Reports />
-          </ProtectedRoute>
+          </AnyWarehouseRoute>
         } 
       />
       <Route 
         path="/insights" 
         element={
-          <ProtectedRoute>
+          <AnyWarehouseRoute>
             <AllInsights />
-          </ProtectedRoute>
+          </AnyWarehouseRoute>
         } 
       />
       <Route 
         path="/settings" 
         element={
-          <ProtectedRoute>
+          <AnyWarehouseRoute>
             <Settings />
-          </ProtectedRoute>
+          </AnyWarehouseRoute>
         } 
       />
       <Route 
         path="/product/:productId" 
         element={
-          <ProtectedRoute>
+          <AnyWarehouseRoute>
             <ProductDetails />
-          </ProtectedRoute>
+          </AnyWarehouseRoute>
         } 
       />
       <Route 
         path="/rerouting-status" 
         element={
-          <ProtectedRoute>
+          <AnyWarehouseRoute>
             <ReroutingStatus />
-          </ProtectedRoute>
+          </AnyWarehouseRoute>
         } 
       />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      
+      {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -118,19 +146,21 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-      <AuthProvider>
-        <InventoryProvider>
-          <WarehouseProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </TooltipProvider>
-          </WarehouseProvider>
-        </InventoryProvider>
-      </AuthProvider>
+      <InventoryProvider>
+        <WarehouseProvider>
+          <AuthSouthProvider>
+            <AuthEastProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </TooltipProvider>
+            </AuthEastProvider>
+          </AuthSouthProvider>
+        </WarehouseProvider>
+      </InventoryProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
