@@ -185,7 +185,7 @@ export const NotificationsPanel: React.FC = () => {
                   </div>
 
                   {/* Action buttons for different notification types */}
-                  {relatedRequest && (
+                  {relatedRequest && notification.rerouteId && (
                     <>
                       {/* Reroute request - show approve/reject */}
                       {notification.type === 'reroute_request' && relatedRequest.status === 'pending' && (
