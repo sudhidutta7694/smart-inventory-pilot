@@ -12,7 +12,8 @@ import {
   Clock,
   Plus,
   Play,
-  Package
+  Package,
+  XCircle
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NewTaskDialog } from "./NewTaskDialog";
@@ -301,6 +302,7 @@ const AdminTaskWindow = () => {
               className="h-6 text-xs flex-1"
               onClick={() => handleRerouteAction(task.rerouteId!, 'reject')}
             >
+              <XCircle className="h-3 w-3 mr-1" />
               Reject
             </Button>
           </div>

@@ -123,14 +123,20 @@ export const NotificationsPanel: React.FC = () => {
   const getActionButtons = (notification: any, relatedRequest: any) => {
     if (!notification.rerouteId || !relatedRequest) return null;
 
-    console.log('Getting action buttons for:', notification.type, 'status:', relatedRequest.status, 'current:', currentWarehouse, 'to:', relatedRequest.toWarehouse);
+    console.log('Action button check:', {
+      notificationType: notification.type,
+      requestStatus: relatedRequest.status,
+      currentWarehouse,
+      fromWarehouse: relatedRequest.fromWarehouse,
+      toWarehouse: relatedRequest.toWarehouse
+    });
 
     // Destination warehouse - approve/reject pending requests
     if (notification.type === 'reroute_request' && 
         relatedRequest.status === 'pending' &&
         currentWarehouse === relatedRequest.toWarehouse) {
       return (
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 mt-3">
           <Button
             size="sm"
             className="h-8 text-xs flex-1"
@@ -157,14 +163,16 @@ export const NotificationsPanel: React.FC = () => {
         relatedRequest.status === 'approved' &&
         currentWarehouse === relatedRequest.fromWarehouse) {
       return (
-        <Button
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
-        >
-          <Play className="h-3 w-3 mr-1" />
-          Start Transit
-        </Button>
+        <div className="mt-3">
+          <Button
+            size="sm"
+            className="h-8 text-xs w-full"
+            onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
+          >
+            <Play className="h-3 w-3 mr-1" />
+            Start Transit
+          </Button>
+        </div>
       );
     }
 
@@ -173,14 +181,16 @@ export const NotificationsPanel: React.FC = () => {
         relatedRequest.status === 'delivered' &&
         currentWarehouse === relatedRequest.toWarehouse) {
       return (
-        <Button
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
-        >
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Confirm Receipt
-        </Button>
+        <div className="mt-3">
+          <Button
+            size="sm"
+            className="h-8 text-xs w-full"
+            onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Confirm Receipt
+          </Button>
+        </div>
       );
     }
 
@@ -273,28 +283,40 @@ export const NotificationsPanel: React.FC = () => {
 
                   {/* Show related request info */}
                   {relatedRequest && (
-                    <div className="flex items-center space-x-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {relatedRequest.quantity} units
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {relatedRequest.fromWarehouse} → {relatedRequest.toWarehouse}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {relatedRequest.status.replace('_', ' ')}
-                      </Badge>
-                      {relatedRequest.transitProgress !== undefined && relatedRequest.transitProgress > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 flex-wrap">
                         <Badge variant="outline" className="text-xs">
-                          <Truck className="h-3 w-3 mr-1" />
-                          {relatedRequest.transitProgress}%
+                          <Clock className="h-3 w-3 mr-1" />
+                          {relatedRequest.quantity} units
                         </Badge>
-                      )}
+                        <Badge variant="outline" className="text-xs">
+                          {relatedRequest.fromWarehouse} → {relatedRequest.toWarehouse}
+                        </Badge>
+                        <Badge 
+                          variant={
+                            relatedRequest.status === 'pending' ? 'secondary' :
+                            relatedRequest.status === 'approved' ? 'default' :
+                            relatedRequest.status === 'in_transit' ? 'outline' :
+                            relatedRequest.status === 'delivered' ? 'secondary' :
+                            relatedRequest.status === 'completed' ? 'default' :
+                            'destructive'
+                          } 
+                          className="text-xs capitalize"
+                        >
+                          {relatedRequest.status.replace('_', ' ')}
+                        </Badge>
+                        {relatedRequest.transitProgress !== undefined && relatedRequest.transitProgress > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Truck className="h-3 w-3 mr-1" />
+                            {relatedRequest.transitProgress}%
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Action buttons */}
+                      {getActionButtons(notification, relatedRequest)}
                     </div>
                   )}
-
-                  {/* Action buttons */}
-                  {getActionButtons(notification, relatedRequest)}
 
                   {/* Mark as read button for unread notifications */}
                   {!notification.read && (
