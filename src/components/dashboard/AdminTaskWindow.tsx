@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,10 @@ const AdminTaskWindow = () => {
     }
   ]);
 
+  console.log('=== ADMIN TASK WINDOW DEBUG ===');
+  console.log('Current warehouse:', currentWarehouse);
+  console.log('Reroute requests:', rerouteRequests);
+
   const handleQuickAction = (action: string) => {
     toast({
       title: "Action Initiated",
@@ -98,10 +103,11 @@ const AdminTaskWindow = () => {
   };
 
   const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
+    console.log('Handling reroute action:', action, 'for reroute:', rerouteId);
     switch (action) {
       case 'approve':
         approveReroute(rerouteId);
-        toast({ title: "Reroute Approved", description: "Request has been approved" });
+        toast({ title: "Reroute Approved", description: "Request has been approved and source warehouse notified" });
         break;
       case 'reject':
         rejectReroute(rerouteId);
@@ -109,7 +115,7 @@ const AdminTaskWindow = () => {
         break;
       case 'start_transit':
         startTransit(rerouteId);
-        toast({ title: "Transit Started", description: "Shipment is now in transit" });
+        toast({ title: "Transit Started", description: "Shipment is now in transit with tracking enabled" });
         break;
       case 'confirm_delivery':
         confirmDelivery(rerouteId);
@@ -145,6 +151,7 @@ const AdminTaskWindow = () => {
     });
   };
 
+  // Convert reroute requests to tasks for current warehouse
   const rerouteTasks = rerouteRequests
     .filter(request => 
       request.fromWarehouse === currentWarehouse || 
@@ -153,40 +160,55 @@ const AdminTaskWindow = () => {
     .map(request => {
       let title = '';
       let actionType = '';
+      let priority: 'high' | 'medium' | 'low' = 'medium';
+      
+      console.log('Converting reroute request to task:', request.id, 'status:', request.status);
       
       if (request.fromWarehouse === currentWarehouse) {
         // Source warehouse tasks
         if (request.status === 'approved') {
           title = `Start Transit: ${request.productName} to ${request.toWarehouse}`;
           actionType = 'start_transit';
+          priority = 'high';
         } else if (request.status === 'pending') {
           title = `Awaiting Approval: ${request.productName} to ${request.toWarehouse}`;
           actionType = 'waiting';
-        } else {
+        } else if (request.status === 'in_transit') {
           title = `Track Shipment: ${request.productName} to ${request.toWarehouse}`;
           actionType = 'tracking';
+        } else {
+          title = `Monitor: ${request.productName} to ${request.toWarehouse}`;
+          actionType = 'monitoring';
         }
       } else {
         // Destination warehouse tasks
         if (request.status === 'pending') {
           title = `Approve Request: ${request.productName} from ${request.fromWarehouse}`;
           actionType = 'approve';
+          priority = 'high';
         } else if (request.status === 'delivered') {
           title = `Confirm Receipt: ${request.productName} from ${request.fromWarehouse}`;
           actionType = 'confirm_delivery';
-        } else {
+          priority = 'high';
+        } else if (request.status === 'in_transit') {
           title = `Monitor Incoming: ${request.productName} from ${request.fromWarehouse}`;
           actionType = 'monitoring';
+        } else {
+          title = `Track: ${request.productName} from ${request.fromWarehouse}`;
+          actionType = 'tracking';
         }
       }
+
+      const taskStatus: 'pending' | 'in-progress' | 'completed' = 
+        request.status === 'completed' ? 'completed' :
+        request.status === 'pending' ? 'pending' : 'in-progress';
 
       return {
         id: `REROUTE-${request.id}`,
         title,
         type: 'reroute' as const,
-        priority: 'medium' as const,
-        status: request.status === 'pending' ? 'pending' as const :
-                request.status === 'completed' ? 'completed' as const : 'in-progress' as const,
+        priority,
+        status: taskStatus,
         dueDate: request.estimatedDelivery ? new Date(request.estimatedDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         description: request.reason,
         assignee: 'Warehouse Admin',
@@ -196,9 +218,18 @@ const AdminTaskWindow = () => {
       };
     });
 
-  const allTasks = [...tasks, ...rerouteTasks].sort((a, b) => 
-    new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-  );
+  console.log('Generated reroute tasks:', rerouteTasks);
+
+  const allTasks = [...tasks, ...rerouteTasks].sort((a, b) => {
+    // Sort by priority first (high -> medium -> low), then by status (pending -> in-progress -> completed)
+    const priorityOrder = { high: 3, medium: 2, low: 1 };
+    const statusOrder = { pending: 3, 'in-progress': 2, completed: 1 };
+    
+    if (a.priority !== b.priority) {
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    }
+    return statusOrder[b.status] - statusOrder[a.status];
+  });
 
   const getTaskIcon = (type: Task['type']) => {
     switch (type) {
@@ -248,6 +279,8 @@ const AdminTaskWindow = () => {
 
   const getRerouteActionButton = (task: Task) => {
     if (!task.rerouteId || !task.actionType) return null;
+
+    console.log('Getting action button for task:', task.id, 'actionType:', task.actionType);
 
     switch (task.actionType) {
       case 'approve':
@@ -369,7 +402,7 @@ const AdminTaskWindow = () => {
 
           {/* Active Tasks */}
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-muted-foreground">Active Tasks</h4>
+            <h4 className="font-medium text-sm text-muted-foreground">Active Tasks ({allTasks.length})</h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {allTasks.map((task) => (
                 <div
@@ -390,6 +423,15 @@ const AdminTaskWindow = () => {
                             <Badge variant="outline" className="text-xs">
                               {task.rerouteData.fromWarehouse} → {task.rerouteData.toWarehouse}
                             </Badge>
+                            <Badge variant="secondary" className="text-xs capitalize">
+                              {task.rerouteData.status.replace('_', ' ')}
+                            </Badge>
+                            {task.rerouteData.transitProgress !== undefined && task.rerouteData.transitProgress > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                <Truck className="h-3 w-3 mr-1" />
+                                {task.rerouteData.transitProgress}%
+                              </Badge>
+                            )}
                           </div>
                         )}
                       </div>

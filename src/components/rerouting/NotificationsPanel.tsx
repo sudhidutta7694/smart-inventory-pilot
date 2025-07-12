@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Sheet,
@@ -28,6 +29,12 @@ export const NotificationsPanel: React.FC = () => {
   } = useWarehouseContext();
 
   const currentWarehouse = user?.warehouse || 'East';
+
+  console.log('=== NOTIFICATIONS PANEL DEBUG ===');
+  console.log('Current warehouse:', currentWarehouse);
+  console.log('All notifications:', notifications);
+  console.log('Unread count:', unreadCount);
+  console.log('Reroute requests:', rerouteRequests);
 
   const handleApproveReroute = (rerouteId: string, notificationId: string) => {
     console.log('Approving reroute:', rerouteId, 'from notification:', notificationId);
@@ -105,14 +112,80 @@ export const NotificationsPanel: React.FC = () => {
 
   // Filter notifications relevant to current warehouse
   const relevantNotifications = notifications
-    .filter(notification => notification.targetWarehouse === currentWarehouse)
+    .filter(notification => {
+      console.log('Checking notification:', notification.id, 'target:', notification.targetWarehouse, 'current:', currentWarehouse);
+      return notification.targetWarehouse === currentWarehouse;
+    })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  console.log('=== NOTIFICATIONS DEBUG ===');
-  console.log('Current warehouse:', currentWarehouse);
-  console.log('All notifications:', notifications);
-  console.log('Relevant notifications:', relevantNotifications);
-  console.log('Reroute requests:', rerouteRequests);
+  console.log('Relevant notifications after filter:', relevantNotifications);
+
+  const getActionButtons = (notification: any, relatedRequest: any) => {
+    if (!notification.rerouteId || !relatedRequest) return null;
+
+    console.log('Getting action buttons for notification:', notification.type, 'status:', relatedRequest.status);
+
+    // Destination warehouse - approve/reject pending requests
+    if (notification.type === 'reroute_request' && 
+        relatedRequest.status === 'pending' &&
+        currentWarehouse === relatedRequest.toWarehouse) {
+      return (
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            className="h-8 text-xs flex-1"
+            onClick={() => handleApproveReroute(notification.rerouteId!, notification.id)}
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approve
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs flex-1"
+            onClick={() => handleRejectReroute(notification.rerouteId!, notification.id)}
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Reject
+          </Button>
+        </div>
+      );
+    }
+
+    // Source warehouse - start transit for approved requests
+    if (notification.type === 'reroute_approved' && 
+        relatedRequest.status === 'approved' &&
+        currentWarehouse === relatedRequest.fromWarehouse) {
+      return (
+        <Button
+          size="sm"
+          className="h-8 text-xs"
+          onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
+        >
+          <Play className="h-3 w-3 mr-1" />
+          Start Transit
+        </Button>
+      );
+    }
+
+    // Destination warehouse - confirm delivery for delivered requests
+    if (notification.type === 'reroute_delivered' && 
+        relatedRequest.status === 'delivered' &&
+        currentWarehouse === relatedRequest.toWarehouse) {
+      return (
+        <Button
+          size="sm"
+          className="h-8 text-xs"
+          onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
+        >
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Confirm Receipt
+        </Button>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <Sheet>
@@ -220,67 +293,8 @@ export const NotificationsPanel: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Action buttons based on notification type and warehouse role */}
-                  {notification.rerouteId && relatedRequest && (
-                    <div className="space-y-2">
-                      {/* Reroute request - show approve/reject for destination warehouse */}
-                      {notification.type === 'reroute_request' && 
-                       relatedRequest.status === 'pending' &&
-                       currentWarehouse === relatedRequest.toWarehouse && (
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            className="h-8 text-xs flex-1"
-                            onClick={() => handleApproveReroute(notification.rerouteId!, notification.id)}
-                          >
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Approve Request
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs flex-1"
-                            onClick={() => handleRejectReroute(notification.rerouteId!, notification.id)}
-                          >
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Approved - show start transit for source warehouse */}
-                      {notification.type === 'reroute_approved' && 
-                       relatedRequest.status === 'approved' &&
-                       currentWarehouse === relatedRequest.fromWarehouse && (
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            className="h-8 text-xs flex-1"
-                            onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
-                          >
-                            <Play className="h-3 w-3 mr-1" />
-                            Start Transit
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Delivered - show confirm delivery for destination warehouse */}
-                      {notification.type === 'reroute_delivered' && 
-                       relatedRequest.status === 'delivered' &&
-                       currentWarehouse === relatedRequest.toWarehouse && (
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            className="h-8 text-xs flex-1"
-                            onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
-                          >
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Confirm Receipt
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Action buttons */}
+                  {getActionButtons(notification, relatedRequest)}
 
                   {/* Mark as read button for unread notifications */}
                   {!notification.read && (

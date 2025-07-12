@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,6 @@ import {
   Search,
   ArrowRight,
   AlertCircle,
-  MapPin,
   Play
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -38,11 +38,16 @@ const ReroutingStatus: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  console.log('=== REROUTING STATUS DEBUG ===');
+  console.log('Current warehouse:', warehouse);
+  console.log('Reroute requests:', rerouteRequests);
+
   const handleLogout = () => {
     window.location.href = '/';
   };
 
   const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
+    console.log('Handling reroute action:', action, 'for reroute:', rerouteId);
     switch (action) {
       case 'approve':
         approveReroute(rerouteId);
@@ -178,6 +183,8 @@ const ReroutingStatus: React.FC = () => {
   };
 
   const getActionButtons = (request: any) => {
+    console.log('Getting action buttons for request:', request.id, 'status:', request.status, 'warehouse:', warehouse);
+    
     // Destination warehouse actions
     if (warehouse === request.toWarehouse) {
       if (request.status === 'pending') {
@@ -186,13 +193,14 @@ const ReroutingStatus: React.FC = () => {
             <Button 
               size="sm" 
               onClick={() => handleRerouteAction(request.id, 'approve')}
+              className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="h-4 w-4 mr-1" />
               Approve
             </Button>
             <Button 
               size="sm" 
-              variant="outline"
+              variant="destructive"
               onClick={() => handleRerouteAction(request.id, 'reject')}
             >
               <XCircle className="h-4 w-4 mr-1" />
@@ -207,6 +215,7 @@ const ReroutingStatus: React.FC = () => {
           <Button 
             size="sm" 
             onClick={() => handleRerouteAction(request.id, 'confirm_delivery')}
+            className="bg-blue-600 hover:bg-blue-700"
           >
             <Package className="h-4 w-4 mr-1" />
             Confirm Receipt
@@ -221,6 +230,7 @@ const ReroutingStatus: React.FC = () => {
         <Button 
           size="sm" 
           onClick={() => handleRerouteAction(request.id, 'start_transit')}
+          className="bg-orange-600 hover:bg-orange-700"
         >
           <Play className="h-4 w-4 mr-1" />
           Start Transit
@@ -262,6 +272,9 @@ const ReroutingStatus: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold">Rerouting Status</h1>
               <p className="text-muted-foreground">Track all stock rerouting operations in real-time</p>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Total Requests: {filteredRequests.length}
             </div>
           </div>
 
