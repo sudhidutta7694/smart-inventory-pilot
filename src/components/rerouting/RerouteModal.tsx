@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,7 +19,7 @@ import {
   Truck,
   AlertCircle
 } from "lucide-react";
-import { useWarehouse } from "@/contexts/WarehouseContext";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import { toast } from "@/hooks/use-toast";
 
 interface RerouteModalProps {
@@ -48,7 +47,7 @@ export const RerouteModal: React.FC<RerouteModalProps> = ({
   currentStock,
   zone
 }) => {
-  const { addRerouteRequest } = useWarehouse();
+  const { addRerouteRequest } = useWarehouseContext();
   const [phase, setPhase] = useState<'idle' | 'analyzing' | 'completed'>('idle');
   const [progress, setProgress] = useState(0);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');

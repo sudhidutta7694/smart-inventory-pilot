@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { products as initialProducts, insights as initialInsights, type Product, type Insight, type MetricData, metricsData as initialMetricsData } from '@/data/mockData';
-import { RerouteRequest, Notification } from '@/contexts/WarehouseContext';
+import { RerouteRequest, Notification } from '@/types/warehouse';
 
 interface SouthWarehouseContextType {
   // Inventory
