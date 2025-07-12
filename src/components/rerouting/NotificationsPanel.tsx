@@ -123,7 +123,7 @@ export const NotificationsPanel: React.FC = () => {
   const getActionButtons = (notification: any, relatedRequest: any) => {
     if (!notification.rerouteId || !relatedRequest) return null;
 
-    console.log('Getting action buttons for notification:', notification.type, 'status:', relatedRequest.status);
+    console.log('Getting action buttons for:', notification.type, 'status:', relatedRequest.status, 'current:', currentWarehouse, 'to:', relatedRequest.toWarehouse);
 
     // Destination warehouse - approve/reject pending requests
     if (notification.type === 'reroute_request' && 

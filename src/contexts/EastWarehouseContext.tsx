@@ -85,6 +85,22 @@ export const EastWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({
             return newNotifications.length > 0 ? [...prev, ...newNotifications] : prev;
           });
         }
+
+        // Also sync reroute requests from other warehouses for cross-warehouse visibility
+        const southData = localStorage.getItem('mockData_south');
+        if (southData) {
+          const parsedSouthData = JSON.parse(southData);
+          const southRerouteRequests = parsedSouthData.rerouteRequests || [];
+          
+          // Add requests that target East warehouse
+          setRerouteRequests(prev => {
+            const existingIds = new Set(prev.map(r => r.id));
+            const relevantRequests = southRerouteRequests.filter((req: RerouteRequest) => 
+              req.toWarehouse === 'East' && !existingIds.has(req.id)
+            );
+            return relevantRequests.length > 0 ? [...prev, ...relevantRequests] : prev;
+          });
+        }
       } catch (error) {
         console.error('Error processing cross-warehouse notifications:', error);
       }
@@ -218,6 +234,21 @@ export const EastWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({
       if (req.id === id) {
         const updatedReq = { ...req, status: 'approved' as const, approvedAt: new Date().toISOString() };
         
+        // Update the source warehouse data as well
+        try {
+          const sourceStorageKey = `mockData_${req.fromWarehouse.toLowerCase()}`;
+          const sourceData = localStorage.getItem(sourceStorageKey);
+          if (sourceData) {
+            const parsedSourceData = JSON.parse(sourceData);
+            parsedSourceData.rerouteRequests = parsedSourceData.rerouteRequests.map((sourceReq: RerouteRequest) =>
+              sourceReq.id === id ? updatedReq : sourceReq
+            );
+            localStorage.setItem(sourceStorageKey, JSON.stringify(parsedSourceData));
+          }
+        } catch (error) {
+          console.error('Error updating source warehouse data:', error);
+        }
+        
         // Send approval notification to source warehouse
         const notification: Notification = {
           id: `NOTIF-APPROVE-${Date.now()}`,
@@ -240,6 +271,21 @@ export const EastWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({
     setRerouteRequests(prev => prev.map(req => {
       if (req.id === id) {
         const updatedReq = { ...req, status: 'rejected' as const };
+        
+        // Update the source warehouse data as well
+        try {
+          const sourceStorageKey = `mockData_${req.fromWarehouse.toLowerCase()}`;
+          const sourceData = localStorage.getItem(sourceStorageKey);
+          if (sourceData) {
+            const parsedSourceData = JSON.parse(sourceData);
+            parsedSourceData.rerouteRequests = parsedSourceData.rerouteRequests.map((sourceReq: RerouteRequest) =>
+              sourceReq.id === id ? updatedReq : sourceReq
+            );
+            localStorage.setItem(sourceStorageKey, JSON.stringify(parsedSourceData));
+          }
+        } catch (error) {
+          console.error('Error updating source warehouse data:', error);
+        }
         
         // Send rejection notification to source warehouse
         const notification: Notification = {
