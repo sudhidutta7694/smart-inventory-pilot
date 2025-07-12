@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Sheet,
@@ -28,9 +27,10 @@ export const NotificationsPanel: React.FC = () => {
     unreadCount
   } = useWarehouseContext();
 
-  const currentWarehouse = user?.warehouse || 'South';
+  const currentWarehouse = user?.warehouse || 'East';
 
   const handleApproveReroute = (rerouteId: string, notificationId: string) => {
+    console.log('Approving reroute:', rerouteId, 'from notification:', notificationId);
     approveReroute(rerouteId);
     markNotificationRead(notificationId);
     toast({
@@ -40,6 +40,7 @@ export const NotificationsPanel: React.FC = () => {
   };
 
   const handleRejectReroute = (rerouteId: string, notificationId: string) => {
+    console.log('Rejecting reroute:', rerouteId, 'from notification:', notificationId);
     rejectReroute(rerouteId);
     markNotificationRead(notificationId);
     toast({
@@ -50,6 +51,7 @@ export const NotificationsPanel: React.FC = () => {
   };
 
   const handleStartTransit = (rerouteId: string, notificationId: string) => {
+    console.log('Starting transit for reroute:', rerouteId);
     startTransit(rerouteId);
     markNotificationRead(notificationId);
     toast({
@@ -59,6 +61,7 @@ export const NotificationsPanel: React.FC = () => {
   };
 
   const handleConfirmDelivery = (rerouteId: string, notificationId: string) => {
+    console.log('Confirming delivery for reroute:', rerouteId);
     confirmDelivery(rerouteId);
     markNotificationRead(notificationId);
     toast({
@@ -105,6 +108,7 @@ export const NotificationsPanel: React.FC = () => {
     .filter(notification => notification.targetWarehouse === currentWarehouse)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+  console.log('=== NOTIFICATIONS DEBUG ===');
   console.log('Current warehouse:', currentWarehouse);
   console.log('All notifications:', notifications);
   console.log('Relevant notifications:', relevantNotifications);
@@ -158,8 +162,10 @@ export const NotificationsPanel: React.FC = () => {
             relevantNotifications.map((notification) => {
               const relatedRequest = rerouteRequests.find(req => req.id === notification.rerouteId);
               
-              console.log('Processing notification:', notification.id, 'Type:', notification.type);
+              console.log('Processing notification:', notification.id);
+              console.log('Notification type:', notification.type);
               console.log('Related request:', relatedRequest);
+              console.log('Request status:', relatedRequest?.status);
               
               return (
                 <div
@@ -192,25 +198,48 @@ export const NotificationsPanel: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Action buttons for different notification types */}
-                  {notification.rerouteId && (
-                    <>
+                  {/* Show related request info */}
+                  {relatedRequest && (
+                    <div className="flex items-center space-x-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {relatedRequest.quantity} units
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {relatedRequest.fromWarehouse} → {relatedRequest.toWarehouse}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {relatedRequest.status.replace('_', ' ')}
+                      </Badge>
+                      {relatedRequest.transitProgress !== undefined && relatedRequest.transitProgress > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          <Truck className="h-3 w-3 mr-1" />
+                          {relatedRequest.transitProgress}%
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons based on notification type and warehouse role */}
+                  {notification.rerouteId && relatedRequest && (
+                    <div className="space-y-2">
                       {/* Reroute request - show approve/reject for destination warehouse */}
                       {notification.type === 'reroute_request' && 
-                       (!relatedRequest || relatedRequest.status === 'pending') && (
+                       relatedRequest.status === 'pending' &&
+                       currentWarehouse === relatedRequest.toWarehouse && (
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => handleApproveReroute(notification.rerouteId!, notification.id)}
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
-                            Approve
+                            Approve Request
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => handleRejectReroute(notification.rerouteId!, notification.id)}
                           >
                             <XCircle className="h-3 w-3 mr-1" />
@@ -221,11 +250,12 @@ export const NotificationsPanel: React.FC = () => {
 
                       {/* Approved - show start transit for source warehouse */}
                       {notification.type === 'reroute_approved' && 
-                       relatedRequest && relatedRequest.status === 'approved' && (
+                       relatedRequest.status === 'approved' &&
+                       currentWarehouse === relatedRequest.fromWarehouse && (
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
                           >
                             <Play className="h-3 w-3 mr-1" />
@@ -236,11 +266,12 @@ export const NotificationsPanel: React.FC = () => {
 
                       {/* Delivered - show confirm delivery for destination warehouse */}
                       {notification.type === 'reroute_delivered' && 
-                       relatedRequest && relatedRequest.status === 'delivered' && (
+                       relatedRequest.status === 'delivered' &&
+                       currentWarehouse === relatedRequest.toWarehouse && (
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -248,29 +279,7 @@ export const NotificationsPanel: React.FC = () => {
                           </Button>
                         </div>
                       )}
-
-                      {/* Show status info if we have a related request */}
-                      {relatedRequest && (
-                        <div className="flex items-center space-x-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {relatedRequest.quantity} units
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {relatedRequest.fromWarehouse} → {relatedRequest.toWarehouse}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs capitalize">
-                            {relatedRequest.status.replace('_', ' ')}
-                          </Badge>
-                          {relatedRequest.transitProgress !== undefined && relatedRequest.transitProgress > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              <Truck className="h-3 w-3 mr-1" />
-                              {relatedRequest.transitProgress}%
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </>
+                    </div>
                   )}
 
                   {/* Mark as read button for unread notifications */}
@@ -278,7 +287,7 @@ export const NotificationsPanel: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 text-xs"
+                      className="h-6 text-xs w-full"
                       onClick={() => markNotificationRead(notification.id)}
                     >
                       Mark as read

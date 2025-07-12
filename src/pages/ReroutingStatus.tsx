@@ -20,15 +20,17 @@ import {
   Search,
   ArrowRight,
   AlertCircle,
-  MapPin
+  MapPin,
+  Play
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useLocation } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const ReroutingStatus: React.FC = () => {
-  const { rerouteRequests } = useWarehouseContext();
+  const { rerouteRequests, approveReroute, rejectReroute, startTransit, confirmDelivery } = useWarehouseContext();
   const location = useLocation();
   const warehouse = location.pathname.includes('/south') ? 'South' : 'East';
   
@@ -38,6 +40,27 @@ const ReroutingStatus: React.FC = () => {
 
   const handleLogout = () => {
     window.location.href = '/';
+  };
+
+  const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
+    switch (action) {
+      case 'approve':
+        approveReroute(rerouteId);
+        toast({ title: "Reroute Approved", description: "Request has been approved and source warehouse notified" });
+        break;
+      case 'reject':
+        rejectReroute(rerouteId);
+        toast({ title: "Reroute Rejected", description: "Request has been rejected", variant: "destructive" });
+        break;
+      case 'start_transit':
+        startTransit(rerouteId);
+        toast({ title: "Transit Started", description: "Shipment is now in transit with tracking enabled" });
+        break;
+      case 'confirm_delivery':
+        confirmDelivery(rerouteId);
+        toast({ title: "Delivery Confirmed", description: "Reroute completed successfully" });
+        break;
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -154,6 +177,60 @@ const ReroutingStatus: React.FC = () => {
     return 0;
   };
 
+  const getActionButtons = (request: any) => {
+    // Destination warehouse actions
+    if (warehouse === request.toWarehouse) {
+      if (request.status === 'pending') {
+        return (
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              onClick={() => handleRerouteAction(request.id, 'approve')}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Approve
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleRerouteAction(request.id, 'reject')}
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              Reject
+            </Button>
+          </div>
+        );
+      }
+      
+      if (request.status === 'delivered') {
+        return (
+          <Button 
+            size="sm" 
+            onClick={() => handleRerouteAction(request.id, 'confirm_delivery')}
+          >
+            <Package className="h-4 w-4 mr-1" />
+            Confirm Receipt
+          </Button>
+        );
+      }
+    }
+    
+    // Source warehouse actions
+    if (warehouse === request.fromWarehouse && request.status === 'approved') {
+      return (
+        <Button 
+          size="sm" 
+          onClick={() => handleRerouteAction(request.id, 'start_transit')}
+        >
+          <Play className="h-4 w-4 mr-1" />
+          Start Transit
+        </Button>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar 
@@ -242,10 +319,13 @@ const ReroutingStatus: React.FC = () => {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{request.productName}</CardTitle>
-                        <Badge variant={getStatusColor(request.status) as any} className="flex items-center space-x-1">
-                          {getStatusIcon(request.status)}
-                          <span>{getStatusLabel(request.status)}</span>
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={getStatusColor(request.status) as any} className="flex items-center space-x-1">
+                            {getStatusIcon(request.status)}
+                            <span>{getStatusLabel(request.status)}</span>
+                          </Badge>
+                          {getActionButtons(request)}
+                        </div>
                       </div>
                     </CardHeader>
                     

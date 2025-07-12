@@ -9,7 +9,9 @@ import {
   FileText,
   CheckCircle,
   Clock,
-  Plus
+  Plus,
+  Play,
+  Package
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NewTaskDialog } from "./NewTaskDialog";
@@ -28,7 +30,7 @@ interface Task {
 }
 
 const AdminTaskWindow = () => {
-  const { rerouteRequests } = useWarehouseContext();
+  const { rerouteRequests, approveReroute, rejectReroute, startTransit, confirmDelivery } = useWarehouseContext();
   const { user } = useAuth();
   const currentWarehouse = user?.warehouse || 'South';
   
@@ -91,6 +93,27 @@ const AdminTaskWindow = () => {
     });
   };
 
+  const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
+    switch (action) {
+      case 'approve':
+        approveReroute(rerouteId);
+        toast({ title: "Reroute Approved", description: "Request has been approved" });
+        break;
+      case 'reject':
+        rejectReroute(rerouteId);
+        toast({ title: "Reroute Rejected", description: "Request has been rejected", variant: "destructive" });
+        break;
+      case 'start_transit':
+        startTransit(rerouteId);
+        toast({ title: "Transit Started", description: "Shipment is now in transit" });
+        break;
+      case 'confirm_delivery':
+        confirmDelivery(rerouteId);
+        toast({ title: "Delivery Confirmed", description: "Reroute completed successfully" });
+        break;
+    }
+  };
+
   const handleNewTask = (newTaskData: {
     title: string;
     type: 'reorder' | 'reroute' | 'flag' | 'report';
@@ -124,20 +147,51 @@ const AdminTaskWindow = () => {
       request.fromWarehouse === currentWarehouse || 
       request.toWarehouse === currentWarehouse
     )
-    .map(request => ({
-      id: `REROUTE-${request.id}`,
-      title: request.fromWarehouse === currentWarehouse 
-        ? `Reroute ${request.productName} to ${request.toWarehouse}`
-        : `Receive ${request.productName} from ${request.fromWarehouse}`,
-      type: 'reroute' as const,
-      priority: 'medium' as const,
-      status: request.status === 'pending' ? 'pending' as const :
-              request.status === 'approved' ? 'in-progress' as const :
-              request.status === 'completed' ? 'completed' as const : 'pending' as const,
-      dueDate: request.estimatedDelivery ? new Date(request.estimatedDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      description: request.reason,
-      assignee: 'Warehouse Admin'
-    }));
+    .map(request => {
+      let title = '';
+      let actionType = '';
+      
+      if (request.fromWarehouse === currentWarehouse) {
+        // Source warehouse tasks
+        if (request.status === 'approved') {
+          title = `Start Transit: ${request.productName} to ${request.toWarehouse}`;
+          actionType = 'start_transit';
+        } else if (request.status === 'pending') {
+          title = `Awaiting Approval: ${request.productName} to ${request.toWarehouse}`;
+          actionType = 'waiting';
+        } else {
+          title = `Track Shipment: ${request.productName} to ${request.toWarehouse}`;
+          actionType = 'tracking';
+        }
+      } else {
+        // Destination warehouse tasks
+        if (request.status === 'pending') {
+          title = `Approve Request: ${request.productName} from ${request.fromWarehouse}`;
+          actionType = 'approve';
+        } else if (request.status === 'delivered') {
+          title = `Confirm Receipt: ${request.productName} from ${request.fromWarehouse}`;
+          actionType = 'confirm_delivery';
+        } else {
+          title = `Monitor Incoming: ${request.productName} from ${request.fromWarehouse}`;
+          actionType = 'monitoring';
+        }
+      }
+
+      return {
+        id: `REROUTE-${request.id}`,
+        title,
+        type: 'reroute' as const,
+        priority: 'medium' as const,
+        status: request.status === 'pending' ? 'pending' as const :
+                request.status === 'completed' ? 'completed' as const : 'in-progress' as const,
+        dueDate: request.estimatedDelivery ? new Date(request.estimatedDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        description: request.reason,
+        assignee: 'Warehouse Admin',
+        rerouteId: request.id,
+        actionType,
+        rerouteData: request
+      };
+    });
 
   const allTasks = [...tasks, ...rerouteTasks].sort((a, b) => 
     new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
@@ -186,6 +240,61 @@ const AdminTaskWindow = () => {
         return 'secondary';
       case 'low':
         return 'outline';
+    }
+  };
+
+  const getRerouteActionButton = (task: any) => {
+    if (!task.rerouteId || !task.actionType) return null;
+
+    switch (task.actionType) {
+      case 'approve':
+        return (
+          <div className="flex space-x-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-6 text-xs flex-1"
+              onClick={() => handleRerouteAction(task.rerouteId, 'approve')}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Approve
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-6 text-xs flex-1"
+              onClick={() => handleRerouteAction(task.rerouteId, 'reject')}
+            >
+              Reject
+            </Button>
+          </div>
+        );
+      case 'start_transit':
+        return (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 text-xs"
+            onClick={() => handleRerouteAction(task.rerouteId, 'start_transit')}
+          >
+            <Play className="h-3 w-3 mr-1" />
+            Start Transit
+          </Button>
+        );
+      case 'confirm_delivery':
+        return (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 text-xs"
+            onClick={() => handleRerouteAction(task.rerouteId, 'confirm_delivery')}
+          >
+            <Package className="h-3 w-3 mr-1" />
+            Confirm Receipt
+          </Button>
+        );
+      default:
+        return null;
     }
   };
 
@@ -270,6 +379,16 @@ const AdminTaskWindow = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm leading-tight">{task.title}</p>
                         <p className="text-xs text-muted-foreground">Due: {task.dueDate}</p>
+                        {task.rerouteData && (
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {task.rerouteData.quantity} units
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {task.rerouteData.fromWarehouse} → {task.rerouteData.toWarehouse}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-1">
@@ -291,26 +410,33 @@ const AdminTaskWindow = () => {
                       <span className="ml-1">{task.status.replace('-', ' ')}</span>
                     </Badge>
                     
-                    {task.status === 'pending' && !task.id.startsWith('REROUTE-') && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-6 text-xs"
-                        onClick={() => handleTaskAction(task.id, 'start')}
-                      >
-                        Start
-                      </Button>
-                    )}
-                    
-                    {task.status === 'in-progress' && !task.id.startsWith('REROUTE-') && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-6 text-xs"
-                        onClick={() => handleTaskAction(task.id, 'complete')}
-                      >
-                        Complete
-                      </Button>
+                    {/* Show appropriate action buttons */}
+                    {task.rerouteId ? (
+                      getRerouteActionButton(task)
+                    ) : (
+                      <>
+                        {task.status === 'pending' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-6 text-xs"
+                            onClick={() => handleTaskAction(task.id, 'start')}
+                          >
+                            Start
+                          </Button>
+                        )}
+                        
+                        {task.status === 'in-progress' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-6 text-xs"
+                            onClick={() => handleTaskAction(task.id, 'complete')}
+                          >
+                            Complete
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
