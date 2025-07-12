@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Sheet,
@@ -10,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Truck, CheckCircle, XCircle, Clock, Play, Package } from "lucide-react";
-import { useWarehouse } from "@/contexts/WarehouseContext";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,11 +24,10 @@ export const NotificationsPanel: React.FC = () => {
     startTransit,
     confirmDelivery,
     rerouteRequests,
-    getUnreadCountForWarehouse
-  } = useWarehouse();
+    unreadCount
+  } = useWarehouseContext();
 
   const currentWarehouse = user?.warehouse || 'South';
-  const unreadCount = getUnreadCountForWarehouse(currentWarehouse);
 
   const handleApproveReroute = (rerouteId: string, notificationId: string) => {
     approveReroute(rerouteId);
