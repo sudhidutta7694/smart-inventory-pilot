@@ -19,7 +19,7 @@ export interface RerouteRequest {
 
 export interface Notification {
   id: string;
-  type: 'reroute_request' | 'approval_required' | 'transit_update' | 'delivery_confirmed';
+  type: 'reroute_request' | 'reroute_approved' | 'reroute_transit_ready' | 'reroute_in_transit' | 'reroute_delivered' | 'reroute_completed' | 'approval_required' | 'transit_update' | 'delivery_confirmed';
   title: string;
   message: string;
   timestamp: string;
