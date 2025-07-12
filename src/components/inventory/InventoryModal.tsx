@@ -1,29 +1,24 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import { categories, zones, suppliers, type Product } from "@/data/mockData";
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useInventory } from '@/contexts/InventoryContext';
+import { categories, zones, suppliers } from '@/data/mockData';
+import { Product } from '@/data/mockData';
 
 interface InventoryModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  product?: Product | null;
-  onSave: (product: Omit<Product, 'id'> | Product) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  product?: Product;
   mode: 'add' | 'edit';
 }
 
-const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: InventoryModalProps) => {
+const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, onClose, product, mode }) => {
+  const { addProduct, updateProduct } = useInventory();
+  
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -33,11 +28,12 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
     zone: '',
     supplier: '',
     last_replenished: new Date().toISOString().split('T')[0],
-    reorder_recommendation: false
+    reorder_recommendation: false,
+    unit_cost: 0
   });
 
   useEffect(() => {
-    if (mode === 'edit' && product) {
+    if (product && mode === 'edit') {
       setFormData({
         name: product.name,
         category: product.category,
@@ -47,9 +43,10 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         zone: product.zone,
         supplier: product.supplier,
         last_replenished: product.last_replenished,
-        reorder_recommendation: product.reorder_recommendation
+        reorder_recommendation: product.reorder_recommendation,
+        unit_cost: product.unit_cost
       });
-    } else if (mode === 'add') {
+    } else {
       setFormData({
         name: '',
         category: '',
@@ -59,186 +56,163 @@ const InventoryModal = ({ open, onOpenChange, product, onSave, mode }: Inventory
         zone: '',
         supplier: '',
         last_replenished: new Date().toISOString().split('T')[0],
-        reorder_recommendation: false
+        reorder_recommendation: false,
+        unit_cost: 0
       });
     }
-  }, [mode, product, open]);
+  }, [product, mode, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.zone || !formData.supplier) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
+    if (mode === 'add') {
+      addProduct(formData);
+    } else if (mode === 'edit' && product) {
+      updateProduct(product.id, formData);
     }
+    
+    onClose();
+  };
 
-    if (formData.stock < 0 || formData.reorder_point < 0 || formData.forecast_demand < 0) {
-      toast({
-        title: "Validation Error",
-        description: "Stock values cannot be negative.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const productData = {
-      ...formData,
-      reorder_recommendation: formData.stock <= formData.reorder_point
-    };
-
-    if (mode === 'edit' && product) {
-      onSave({ ...product, ...productData });
-    } else {
-      onSave(productData);
-    }
-
-    toast({
-      title: mode === 'add' ? "Product Added" : "Product Updated",
-      description: `${formData.name} has been ${mode === 'add' ? 'added' : 'updated'} successfully.`,
-    });
-
-    onOpenChange(false);
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
             {mode === 'add' ? 'Add New Product' : 'Edit Product'}
           </DialogTitle>
-          <DialogDescription>
-            {mode === 'add' 
-              ? 'Enter the details for the new product.' 
-              : 'Update the product information below.'
-            }
-          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter product name"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.filter(cat => cat !== 'All').map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="name">Product Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              required
+            />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Current Stock</Label>
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.filter(cat => cat !== 'All').map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="stock">Stock Level</Label>
               <Input
                 id="stock"
                 type="number"
-                min="0"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
+                min="0"
+                required
               />
             </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="reorder_point">Reorder Point</Label>
               <Input
                 id="reorder_point"
                 type="number"
-                min="0"
                 value={formData.reorder_point}
-                onChange={(e) => setFormData({ ...formData, reorder_point: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="forecast_demand">7-Day Forecast</Label>
-              <Input
-                id="forecast_demand"
-                type="number"
+                onChange={(e) => handleInputChange('reorder_point', parseInt(e.target.value) || 0)}
                 min="0"
-                value={formData.forecast_demand}
-                onChange={(e) => setFormData({ ...formData, forecast_demand: parseInt(e.target.value) || 0 })}
+                required
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="zone">Zone *</Label>
-              <Select 
-                value={formData.zone} 
-                onValueChange={(value) => setFormData({ ...formData, zone: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {zones.filter(zone => zone !== 'All').map((zone) => (
-                    <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div>
+              <Label htmlFor="forecast_demand">Forecast Demand</Label>
+              <Input
+                id="forecast_demand"
+                type="number"
+                value={formData.forecast_demand}
+                onChange={(e) => handleInputChange('forecast_demand', parseInt(e.target.value) || 0)}
+                min="0"
+                required
+              />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier *</Label>
-              <Select 
-                value={formData.supplier} 
-                onValueChange={(value) => setFormData({ ...formData, supplier: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.filter(supplier => supplier !== 'All').map((supplier) => (
-                    <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div>
+              <Label htmlFor="unit_cost">Unit Cost ($)</Label>
+              <Input
+                id="unit_cost"
+                type="number"
+                step="0.01"
+                value={formData.unit_cost}
+                onChange={(e) => handleInputChange('unit_cost', parseFloat(e.target.value) || 0)}
+                min="0"
+                required
+              />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div>
+            <Label htmlFor="zone">Zone</Label>
+            <Select value={formData.zone} onValueChange={(value) => handleInputChange('zone', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select zone" />
+              </SelectTrigger>
+              <SelectContent>
+                {zones.filter(zone => zone !== 'All').map(zone => (
+                  <SelectItem key={zone} value={zone}>{zone}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="supplier">Supplier</Label>
+            <Select value={formData.supplier} onValueChange={(value) => handleInputChange('supplier', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select supplier" />
+              </SelectTrigger>
+              <SelectContent>
+                {suppliers.filter(supplier => supplier !== 'All').map(supplier => (
+                  <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label htmlFor="last_replenished">Last Replenished</Label>
             <Input
               id="last_replenished"
               type="date"
               value={formData.last_replenished}
-              onChange={(e) => setFormData({ ...formData, last_replenished: e.target.value })}
+              onChange={(e) => handleInputChange('last_replenished', e.target.value)}
+              required
             />
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit">
-              {mode === 'add' ? 'Add Product' : 'Update Product'}
+              {mode === 'add' ? 'Add Product' : 'Save Changes'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

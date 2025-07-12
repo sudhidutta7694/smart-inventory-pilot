@@ -14,19 +14,18 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  warehouse: 'South' | 'East';
 }
 
-const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
+const Sidebar = ({ collapsed, onToggle, warehouse }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
 
-  const warehouseRoute = user?.warehouse.toLowerCase() || 'south';
+  const warehouseRoute = warehouse.toLowerCase();
 
   const navigationItems = [
     { 
@@ -37,34 +36,33 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     { 
       label: "Reports", 
       icon: FileText, 
-      path: "/reports" 
+      path: `/${warehouseRoute}/reports` 
     },
     { 
       label: "AI Insights", 
       icon: TrendingUp, 
-      path: "/insights" 
+      path: `/${warehouseRoute}/insights` 
     },
     { 
       label: "Rerouting", 
       icon: Truck, 
-      path: "/rerouting-status" 
+      path: `/${warehouseRoute}/rerouting-status` 
     },
     { 
       label: "Analytics", 
       icon: BarChart3, 
-      path: "/analytics" 
+      path: `/${warehouseRoute}/analytics` 
     },
     { 
       label: "Settings", 
       icon: Settings, 
-      path: "/settings" 
+      path: `/${warehouseRoute}/settings` 
     }
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    logout();
     navigate('/');
   };
 
@@ -82,7 +80,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                 Supply Chain AI
               </h2>
               <p className="text-xs text-muted-foreground">
-                {user?.warehouse} Warehouse
+                {warehouse} Warehouse
               </p>
             </div>
           )}

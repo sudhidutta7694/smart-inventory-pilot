@@ -1,195 +1,133 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { Warehouse, ShieldCheck, TrendingUp, AlertCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Building2, Shield } from 'lucide-react';
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!username || !password) {
-      toast({
-        title: "Login Error",
-        description: "Please enter both username and password",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    setError('');
     setIsLoading(true);
 
-    try {
-      const success = await login(username, password);
-      
-      if (success) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome to SupplyChain AI Dashboard",
-        });
-        // Navigation will be handled by the app based on user warehouse
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid username or password",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Login Error",
-        description: "An error occurred during login. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
+    // Hardcoded credentials and routing logic
+    if (email === 'admin1@supply.com' && password === 'south123pass') {
+      // Redirect to South dashboard
+      window.location.href = '/south/dashboard';
+    } else if (email === 'admin2@supply.com' && password === 'east123pass') {
+      // Redirect to East dashboard
+      window.location.href = '/east/dashboard';
+    } else {
+      setError('Invalid credentials. Please use the correct admin credentials.');
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-accent/20 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
         
-        {/* Left Side - Branding & Features */}
-        <div className="hidden lg:block space-y-8">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-gradient-to-r from-primary to-primary-glow rounded-xl shadow-lg">
-                <Warehouse className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                  SupplyChain AI
-                </h1>
-                <p className="text-muted-foreground">Intelligence Platform</p>
-              </div>
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+              <Building2 className="w-8 h-8 text-primary-foreground" />
             </div>
-            <p className="text-lg text-muted-foreground">
-              Transform your warehouse operations with AI-powered insights and predictive analytics
-            </p>
           </div>
-
-          <div className="space-y-6">
-            <div className="flex items-start space-x-4">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Predictive Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Forecast demand patterns and optimize inventory levels with machine learning
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Warehouse className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Real-time Monitoring</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track inventory levels, shipments, and warehouse operations in real-time
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="p-2 bg-warning/10 rounded-lg">
-                <ShieldCheck className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Smart Alerts</h3>
-                <p className="text-sm text-muted-foreground">
-                  Get notified about critical stock levels and potential supply chain disruptions
-                </p>
-              </div>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Supply Chain AI</h1>
+            <p className="text-muted-foreground">Warehouse Management System</p>
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
-        <div className="w-full max-w-md mx-auto">
-          <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
-            <CardHeader className="space-y-2 text-center">
-              <div className="flex justify-center lg:hidden mb-4">
-                <div className="p-3 bg-gradient-to-r from-primary to-primary-glow rounded-xl shadow-lg">
-                  <Warehouse className="h-8 w-8 text-primary-foreground" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
-              <CardDescription>
-                Enter your credentials to access the warehouse dashboard
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="Enter username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
+        {/* Login Form */}
+        <Card className="shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-semibold flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Admin Login
+            </CardTitle>
+            <CardDescription>
+              Enter your warehouse admin credentials
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
               
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium text-muted-foreground">Demo Credentials</p>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@supply.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+
+            </form>
+
+            {/* Demo Credentials */}
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <h3 className="font-medium text-sm mb-2">Demo Credentials:</h3>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div>
+                  <strong>South Warehouse:</strong><br />
+                  admin1@supply.com / south123pass
                 </div>
-                <div className="text-xs space-y-2">
-                  <div className="space-y-1">
-                    <p className="font-medium">South Warehouse Admin:</p>
-                    <p>Username: <code className="bg-muted px-1 rounded">admin1</code></p>
-                    <p>Password: <code className="bg-muted px-1 rounded">south123pass</code></p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">East Warehouse Admin:</p>
-                    <p>Username: <code className="bg-muted px-1 rounded">admin2</code></p>
-                    <p>Password: <code className="bg-muted px-1 rounded">east123pass</code></p>
-                  </div>
+                <div>
+                  <strong>East Warehouse:</strong><br />
+                  admin2@supply.com / east123pass
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Supply Chain Intelligence Platform</p>
+          <p>© 2025 All rights reserved</p>
         </div>
+
       </div>
     </div>
   );
