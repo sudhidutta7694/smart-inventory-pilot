@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Sheet,
@@ -210,7 +211,7 @@ export const NotificationsPanel: React.FC = () => {
                       )}
 
                       {/* Approved - show start transit */}
-                      {notification.type === 'reroute_approved' && relatedRequest.status === 'transit_prep' && (
+                      {notification.type === 'reroute_approved' && relatedRequest.status === 'approved' && (
                         <div className="flex space-x-2">
                           <Button
                             size="sm"

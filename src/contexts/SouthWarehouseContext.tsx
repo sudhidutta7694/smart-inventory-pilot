@@ -42,6 +42,7 @@ export const useSouthWarehouse = () => {
 };
 
 const SOUTH_STORAGE_KEY = 'mockData_south';
+const CROSS_WAREHOUSE_KEY = 'cross_warehouse_notifications';
 
 export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,6 +51,55 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
   const [rerouteRequests, setRerouteRequests] = useState<RerouteRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Cross-warehouse communication helper
+  const sendCrossWarehouseNotification = useCallback((notification: Notification) => {
+    try {
+      const existingCrossNotifications = JSON.parse(localStorage.getItem(CROSS_WAREHOUSE_KEY) || '[]');
+      const updatedNotifications = [...existingCrossNotifications, notification];
+      localStorage.setItem(CROSS_WAREHOUSE_KEY, JSON.stringify(updatedNotifications));
+      
+      // Trigger storage event for real-time updates
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: CROSS_WAREHOUSE_KEY,
+        newValue: JSON.stringify(updatedNotifications)
+      }));
+    } catch (error) {
+      console.error('Error sending cross-warehouse notification:', error);
+    }
+  }, []);
+
+  // Listen for cross-warehouse notifications
+  useEffect(() => {
+    const handleCrossWarehouseNotifications = () => {
+      try {
+        const crossNotifications = JSON.parse(localStorage.getItem(CROSS_WAREHOUSE_KEY) || '[]');
+        const southNotifications = crossNotifications.filter((notif: Notification) => 
+          notif.targetWarehouse === 'South'
+        );
+        
+        if (southNotifications.length > 0) {
+          setNotifications(prev => {
+            const existingIds = new Set(prev.map(n => n.id));
+            const newNotifications = southNotifications.filter((n: Notification) => !existingIds.has(n.id));
+            return newNotifications.length > 0 ? [...prev, ...newNotifications] : prev;
+          });
+        }
+      } catch (error) {
+        console.error('Error processing cross-warehouse notifications:', error);
+      }
+    };
+
+    // Initial check
+    handleCrossWarehouseNotifications();
+
+    // Listen for storage changes
+    window.addEventListener('storage', handleCrossWarehouseNotifications);
+    
+    return () => {
+      window.removeEventListener('storage', handleCrossWarehouseNotifications);
+    };
+  }, []);
 
   // Load data from localStorage or initialize with defaults
   const loadData = useCallback(() => {
@@ -136,7 +186,7 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
     loadData();
   }, [loadData]);
 
-  // Rerouting methods
+  // Rerouting methods with proper notification flow
   const addRerouteRequest = useCallback((request: Omit<RerouteRequest, 'id' | 'requestedAt'>) => {
     const newRequest: RerouteRequest = {
       ...request,
@@ -158,47 +208,147 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
       rerouteId: newRequest.id,
       targetWarehouse: request.toWarehouse
     };
-    setNotifications(prev => [...prev, notification]);
-  }, []);
+
+    // Send to target warehouse
+    sendCrossWarehouseNotification(notification);
+  }, [sendCrossWarehouseNotification]);
 
   const approveReroute = useCallback((id: string) => {
-    setRerouteRequests(prev => prev.map(req => 
-      req.id === id 
-        ? { ...req, status: 'transit_prep' as const, approvedAt: new Date().toISOString() }
-        : req
-    ));
-  }, []);
+    setRerouteRequests(prev => prev.map(req => {
+      if (req.id === id) {
+        const updatedReq = { ...req, status: 'approved' as const, approvedAt: new Date().toISOString() };
+        
+        // Send approval notification to source warehouse
+        const notification: Notification = {
+          id: `NOTIF-APPROVE-${Date.now()}`,
+          type: 'reroute_approved',
+          title: 'Reroute Request Approved',
+          message: `Your request for ${req.quantity} units of ${req.productName} has been approved`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          rerouteId: id,
+          targetWarehouse: req.fromWarehouse
+        };
+        sendCrossWarehouseNotification(notification);
+        return updatedReq;
+      }
+      return req;
+    }));
+  }, [sendCrossWarehouseNotification]);
 
   const rejectReroute = useCallback((id: string) => {
-    setRerouteRequests(prev => prev.map(req => 
-      req.id === id ? { ...req, status: 'rejected' as const } : req
-    ));
-  }, []);
+    setRerouteRequests(prev => prev.map(req => {
+      if (req.id === id) {
+        const updatedReq = { ...req, status: 'rejected' as const };
+        
+        // Send rejection notification to source warehouse
+        const notification: Notification = {
+          id: `NOTIF-REJECT-${Date.now()}`,
+          type: 'reroute_request',
+          title: 'Reroute Request Rejected',
+          message: `Your request for ${req.quantity} units of ${req.productName} has been rejected`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          rerouteId: id,
+          targetWarehouse: req.fromWarehouse
+        };
+        sendCrossWarehouseNotification(notification);
+        return updatedReq;
+      }
+      return req;
+    }));
+  }, [sendCrossWarehouseNotification]);
 
   const startTransit = useCallback((id: string) => {
-    setRerouteRequests(prev => prev.map(req => 
-      req.id === id 
-        ? { 
-            ...req, 
-            status: 'in_transit' as const, 
-            transitStartedAt: new Date().toISOString(),
-            transitProgress: 0
-          }
-        : req
-    ));
-  }, []);
+    setRerouteRequests(prev => prev.map(req => {
+      if (req.id === id) {
+        const updatedReq = { 
+          ...req, 
+          status: 'in_transit' as const, 
+          transitStartedAt: new Date().toISOString(),
+          transitProgress: 25
+        };
+        
+        // Send transit notification to destination warehouse
+        const notification: Notification = {
+          id: `NOTIF-TRANSIT-${Date.now()}`,
+          type: 'reroute_in_transit',
+          title: 'Shipment In Transit',
+          message: `${req.quantity} units of ${req.productName} are now in transit`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          rerouteId: id,
+          targetWarehouse: req.toWarehouse
+        };
+        sendCrossWarehouseNotification(notification);
+        
+        // Simulate transit progress
+        setTimeout(() => {
+          setRerouteRequests(current => current.map(r => 
+            r.id === id ? { ...r, transitProgress: 75 } : r
+          ));
+        }, 2000);
+        
+        setTimeout(() => {
+          setRerouteRequests(current => current.map(r => {
+            if (r.id === id) {
+              const deliveredReq = { 
+                ...r, 
+                status: 'delivered' as const, 
+                deliveredAt: new Date().toISOString(),
+                transitProgress: 100
+              };
+              
+              // Send delivery notification
+              const deliveryNotification: Notification = {
+                id: `NOTIF-DELIVERED-${Date.now()}`,
+                type: 'reroute_delivered',
+                title: 'Shipment Delivered',
+                message: `${r.quantity} units of ${r.productName} have been delivered`,
+                timestamp: new Date().toISOString(),
+                read: false,
+                rerouteId: id,
+                targetWarehouse: r.toWarehouse
+              };
+              sendCrossWarehouseNotification(deliveryNotification);
+              return deliveredReq;
+            }
+            return r;
+          }));
+        }, 5000);
+        
+        return updatedReq;
+      }
+      return req;
+    }));
+  }, [sendCrossWarehouseNotification]);
 
   const confirmDelivery = useCallback((id: string) => {
-    setRerouteRequests(prev => prev.map(req => 
-      req.id === id 
-        ? { 
-            ...req, 
-            status: 'completed' as const,
-            completedAt: new Date().toISOString()
-          }
-        : req
-    ));
-  }, []);
+    setRerouteRequests(prev => prev.map(req => {
+      if (req.id === id) {
+        const updatedReq = { 
+          ...req, 
+          status: 'completed' as const,
+          completedAt: new Date().toISOString()
+        };
+        
+        // Send completion notification to source warehouse
+        const notification: Notification = {
+          id: `NOTIF-COMPLETED-${Date.now()}`,
+          type: 'reroute_completed',
+          title: 'Reroute Completed',
+          message: `Reroute of ${req.quantity} units of ${req.productName} has been completed`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          rerouteId: id,
+          targetWarehouse: req.fromWarehouse
+        };
+        sendCrossWarehouseNotification(notification);
+        return updatedReq;
+      }
+      return req;
+    }));
+  }, [sendCrossWarehouseNotification]);
 
   const completeReroute = useCallback((id: string) => {
     confirmDelivery(id);
