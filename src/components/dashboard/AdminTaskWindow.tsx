@@ -76,9 +76,6 @@ const AdminTaskWindow = () => {
     }
   ]);
 
-  console.log('=== ADMIN TASK WINDOW DEBUG ===');
-  console.log('Current warehouse:', currentWarehouse);
-  console.log('Reroute requests:', rerouteRequests);
 
   const handleQuickAction = (action: string) => {
     toast({
@@ -104,7 +101,6 @@ const AdminTaskWindow = () => {
   };
 
   const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
-    console.log('Handling reroute action:', action, 'for reroute:', rerouteId);
     switch (action) {
       case 'approve':
         approveReroute(rerouteId);
@@ -163,8 +159,6 @@ const AdminTaskWindow = () => {
       let actionType = '';
       let priority: 'high' | 'medium' | 'low' = 'medium';
       
-      console.log('Converting reroute request to task:', request.id, 'status:', request.status);
-      
       if (request.fromWarehouse === currentWarehouse) {
         // Source warehouse tasks
         if (request.status === 'approved') {
@@ -219,7 +213,6 @@ const AdminTaskWindow = () => {
       };
     });
 
-  console.log('Generated reroute tasks:', rerouteTasks);
 
   const allTasks = [...tasks, ...rerouteTasks].sort((a, b) => {
     // Sort by priority first (high -> medium -> low), then by status (pending -> in-progress -> completed)
@@ -280,8 +273,6 @@ const AdminTaskWindow = () => {
 
   const getRerouteActionButton = (task: Task) => {
     if (!task.rerouteId || !task.actionType) return null;
-
-    console.log('Getting action button for task:', task.id, 'actionType:', task.actionType);
 
     switch (task.actionType) {
       case 'approve':

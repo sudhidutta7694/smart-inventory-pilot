@@ -38,16 +38,12 @@ const ReroutingStatus: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  console.log('=== REROUTING STATUS DEBUG ===');
-  console.log('Current warehouse:', warehouse);
-  console.log('Reroute requests:', rerouteRequests);
 
   const handleLogout = () => {
     window.location.href = '/';
   };
 
   const handleRerouteAction = (rerouteId: string, action: 'approve' | 'reject' | 'start_transit' | 'confirm_delivery') => {
-    console.log('Handling reroute action:', action, 'for reroute:', rerouteId);
     switch (action) {
       case 'approve':
         approveReroute(rerouteId);
@@ -183,7 +179,6 @@ const ReroutingStatus: React.FC = () => {
   };
 
   const getActionButtons = (request: any) => {
-    console.log('Getting action buttons for request:', request.id, 'status:', request.status, 'warehouse:', warehouse);
     
     // Destination warehouse actions
     if (warehouse === request.toWarehouse) {

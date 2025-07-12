@@ -328,6 +328,27 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
           transitProgress: 25
         };
         
+        // Update destination warehouse data as well
+        try {
+          const destStorageKey = `mockData_${req.toWarehouse.toLowerCase()}`;
+          const destData = localStorage.getItem(destStorageKey);
+          if (destData) {
+            const parsedDestData = JSON.parse(destData);
+            parsedDestData.rerouteRequests = parsedDestData.rerouteRequests.map((destReq: RerouteRequest) =>
+              destReq.id === id ? updatedReq : destReq
+            );
+            localStorage.setItem(destStorageKey, JSON.stringify(parsedDestData));
+            
+            // Trigger storage event for real-time updates
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: destStorageKey,
+              newValue: JSON.stringify(parsedDestData)
+            }));
+          }
+        } catch (error) {
+          console.error('Error updating destination warehouse data:', error);
+        }
+        
         // Send transit notification to destination warehouse
         const notification: Notification = {
           id: `NOTIF-TRANSIT-${Date.now()}`,
@@ -390,6 +411,27 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
           status: 'completed' as const,
           completedAt: new Date().toISOString()
         };
+        
+        // Update source warehouse data as well
+        try {
+          const sourceStorageKey = `mockData_${req.fromWarehouse.toLowerCase()}`;
+          const sourceData = localStorage.getItem(sourceStorageKey);
+          if (sourceData) {
+            const parsedSourceData = JSON.parse(sourceData);
+            parsedSourceData.rerouteRequests = parsedSourceData.rerouteRequests.map((sourceReq: RerouteRequest) =>
+              sourceReq.id === id ? updatedReq : sourceReq
+            );
+            localStorage.setItem(sourceStorageKey, JSON.stringify(parsedSourceData));
+            
+            // Trigger storage event for real-time updates
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: sourceStorageKey,
+              newValue: JSON.stringify(parsedSourceData)
+            }));
+          }
+        } catch (error) {
+          console.error('Error updating source warehouse data:', error);
+        }
         
         // Send completion notification to source warehouse
         const notification: Notification = {
