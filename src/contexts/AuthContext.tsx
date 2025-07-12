@@ -29,14 +29,14 @@ export const useAuth = () => {
 const mockUsers: User[] = [
   {
     id: 'admin_south',
-    username: 'admin1',
+    username: 'admin1@supply.com',
     name: 'Sarah Johnson',
     warehouse: 'South',
     role: 'admin'
   },
   {
     id: 'admin_east',
-    username: 'admin2', 
+    username: 'admin2@supply.com', 
     name: 'Mike Chen',
     warehouse: 'East',
     role: 'admin'
@@ -44,8 +44,8 @@ const mockUsers: User[] = [
 ];
 
 const mockPasswords: Record<string, string> = {
-  'admin1': 'south123pass',
-  'admin2': 'east123pass'
+  'admin1@supply.com': 'south123pass',
+  'admin2@supply.com': 'east123pass'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

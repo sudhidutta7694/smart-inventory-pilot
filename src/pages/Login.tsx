@@ -6,27 +6,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Building2, Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Hardcoded credentials and routing logic
-    if (email === 'admin1@supply.com' && password === 'south123pass') {
-      // Redirect to South dashboard
-      window.location.href = '/south/dashboard';
-    } else if (email === 'admin2@supply.com' && password === 'east123pass') {
-      // Redirect to East dashboard
-      window.location.href = '/east/dashboard';
-    } else {
-      setError('Invalid credentials. Please use the correct admin credentials.');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        // Login successful, navigate based on user warehouse
+        if (email === 'admin1@supply.com') {
+          navigate('/south/dashboard');
+        } else if (email === 'admin2@supply.com') {
+          navigate('/east/dashboard');
+        }
+      } else {
+        setError('Invalid credentials. Please use the correct admin credentials.');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };
