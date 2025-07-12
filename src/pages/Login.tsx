@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Warehouse, ShieldCheck, TrendingUp, AlertCircle } from "lucide-react";
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [username, setUsername] = useState("");

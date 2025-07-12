@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   collapsed: boolean;

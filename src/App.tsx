@@ -4,164 +4,135 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { EnhancedAuthProvider, useAuth } from "./contexts/EnhancedAuthContext";
-import { WarehouseProvider } from "./contexts/WarehouseContext";
-import { InventoryProvider } from "./contexts/InventoryContext";
-import Index from "./pages/Index";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { WarehouseProvider } from "@/contexts/WarehouseContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
+import AllInsights from "./pages/AllInsights";
+import Settings from "./pages/Settings";
+import ProductDetails from "./pages/ProductDetails";
 import SouthDashboard from "./pages/SouthDashboard";
 import EastDashboard from "./pages/EastDashboard";
-import AllInsights from "./pages/AllInsights";
 import ReroutingStatus from "./pages/ReroutingStatus";
-import ProductDetails from "./pages/ProductDetails";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 };
 
-// Warehouse Route Component
-const WarehouseRoute = ({ 
-  children, 
-  warehouse 
-}: { 
-  children: React.ReactNode;
-  warehouse: 'South' | 'East';
-}) => {
-  const { user, isAuthenticated } = useAuth();
+const DashboardRedirect = () => {
+  const { user } = useAuth();
   
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/" replace />;
   }
   
-  // Allow access if user matches warehouse or if no specific user is set
-  if (user && user.warehouse !== warehouse) {
-    return <Navigate to={`/${user.warehouse.toLowerCase()}/dashboard`} replace />;
-  }
-  
-  return <>{children}</>;
+  return <Navigate to={`/${user.warehouse.toLowerCase()}/dashboard`} replace />;
 };
 
-function AppContent() {
-  const { isAuthenticated, user } = useAuth();
+const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
 
-  return (
-    <div className="min-h-screen bg-background font-sans antialiased">
+  if (!isAuthenticated) {
+    return (
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* General Dashboard (redirects to specific warehouse) */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Warehouse-specific dashboards */}
-        <Route 
-          path="/south/dashboard" 
-          element={
-            <WarehouseRoute warehouse="South">
-              <SouthDashboard />
-            </WarehouseRoute>
-          } 
-        />
-        
-        <Route 
-          path="/east/dashboard" 
-          element={
-            <WarehouseRoute warehouse="East">
-              <EastDashboard />
-            </WarehouseRoute>
-          } 
-        />
-        
-        {/* Protected routes */}
-        <Route 
-          path="/insights" 
-          element={
-            <ProtectedRoute>
-              <AllInsights />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/rerouting-status" 
-          element={
-            <ProtectedRoute>
-              <ReroutingStatus />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/products/:id" 
-          element={
-            <ProtectedRoute>
-              <ProductDetails />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/reports" 
-          element={
-            <ProtectedRoute>
-              <Reports />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route path="*" element={<NotFound />} />
+        <Route path="/" element={<Login />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </div>
-  );
-}
+    );
+  }
 
-function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <EnhancedAuthProvider>
-        <WarehouseProvider>
-          <InventoryProvider>
+    <Routes>
+      <Route path="/" element={<DashboardRedirect />} />
+      <Route path="/dashboard" element={<DashboardRedirect />} />
+      
+      <Route 
+        path="/south/dashboard" 
+        element={
+          <ProtectedRoute>
+            <SouthDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/east/dashboard" 
+        element={
+          <ProtectedRoute>
+            <EastDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/reports" 
+        element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/insights" 
+        element={
+          <ProtectedRoute>
+            <AllInsights />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/product/:productId" 
+        element={
+          <ProtectedRoute>
+            <ProductDetails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/rerouting-status" 
+        element={
+          <ProtectedRoute>
+            <ReroutingStatus />
+          </ProtectedRoute>
+        } 
+      />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+      <AuthProvider>
+        <InventoryProvider>
+          <WarehouseProvider>
             <TooltipProvider>
+              <Toaster />
+              <Sonner />
               <BrowserRouter>
-                <AppContent />
-                <Toaster />
-                <Sonner />
+                <AppRoutes />
               </BrowserRouter>
             </TooltipProvider>
-          </InventoryProvider>
-        </WarehouseProvider>
-      </EnhancedAuthProvider>
-    </QueryClientProvider>
-  );
-}
+          </WarehouseProvider>
+        </InventoryProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;

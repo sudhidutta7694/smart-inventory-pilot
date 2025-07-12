@@ -20,6 +20,7 @@ import {
   Truck,
   AlertCircle
 } from "lucide-react";
+import { useWarehouse } from "@/contexts/WarehouseContext";
 import { toast } from "@/hooks/use-toast";
 
 interface RerouteModalProps {
@@ -29,7 +30,6 @@ interface RerouteModalProps {
   productName: string;
   currentStock: number;
   zone: string;
-  onSubmit: (rerouteData: any) => void;
 }
 
 interface EvaluationCriteria {
@@ -46,9 +46,9 @@ export const RerouteModal: React.FC<RerouteModalProps> = ({
   productId,
   productName,
   currentStock,
-  zone,
-  onSubmit
+  zone
 }) => {
+  const { addRerouteRequest } = useWarehouse();
   const [phase, setPhase] = useState<'idle' | 'analyzing' | 'completed'>('idle');
   const [progress, setProgress] = useState(0);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
@@ -119,8 +119,13 @@ export const RerouteModal: React.FC<RerouteModalProps> = ({
   const sendRerouteRequest = () => {
     const quantity = Math.min(50, currentStock);
     
-    onSubmit({
+    addRerouteRequest({
+      productId,
+      productName,
+      fromWarehouse: zone,
+      toWarehouse: selectedWarehouse,
       quantity,
+      status: 'pending',
       reason: 'AI-recommended redistribution due to demand spike'
     });
 

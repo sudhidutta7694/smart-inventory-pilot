@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,12 +69,6 @@ const AIInsightPanel = () => {
       // Handle other insight actions
       console.log(`Executing action: ${insight.cta} for insight: ${insight.title}`);
     }
-  };
-
-  const handleRerouteSubmit = (rerouteData: any) => {
-    console.log('Reroute request submitted:', rerouteData);
-    // Handle the reroute submission logic here
-    // This could involve updating the store, sending notifications, etc.
   };
 
   return (
@@ -152,7 +147,6 @@ const AIInsightPanel = () => {
           productName="Heavy Duty Pumps HD-500"
           currentStock={342}
           zone={selectedInsight.zone}
-          onSubmit={handleRerouteSubmit}
         />
       )}
     </>
