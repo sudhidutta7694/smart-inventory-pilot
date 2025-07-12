@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NewTaskDialog } from "./NewTaskDialog";
-import { useWarehouse } from "@/contexts/WarehouseContext";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
   id: string;
@@ -28,7 +28,10 @@ interface Task {
 }
 
 const AdminTaskWindow = () => {
-  const { rerouteRequests, currentWarehouse } = useWarehouse();
+  const { rerouteRequests } = useWarehouseContext();
+  const { user } = useAuth();
+  const currentWarehouse = user?.warehouse || 'South';
+  
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
     {
