@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Sheet,
@@ -9,178 +8,26 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Truck, CheckCircle, XCircle, Clock, Play, Package } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { NotificationItem } from "./NotificationItem";
 
 export const NotificationsPanel: React.FC = () => {
   const { user } = useAuth();
   const { 
     notifications, 
-    markNotificationRead, 
     markAllNotificationsRead,
-    approveReroute, 
-    rejectReroute,
-    startTransit,
-    confirmDelivery,
     rerouteRequests,
     unreadCount
   } = useWarehouseContext();
 
   const currentWarehouse = user?.warehouse || 'East';
 
-
-  const handleApproveReroute = (rerouteId: string, notificationId: string) => {
-    console.log('Approving reroute:', rerouteId, 'from notification:', notificationId);
-    approveReroute(rerouteId);
-    markNotificationRead(notificationId);
-    toast({
-      title: "Reroute Approved",
-      description: "The reroute request has been approved. Source warehouse can now start transit.",
-    });
-  };
-
-  const handleRejectReroute = (rerouteId: string, notificationId: string) => {
-    console.log('Rejecting reroute:', rerouteId, 'from notification:', notificationId);
-    rejectReroute(rerouteId);
-    markNotificationRead(notificationId);
-    toast({
-      title: "Reroute Rejected",
-      description: "The reroute request has been rejected.",
-      variant: "destructive"
-    });
-  };
-
-  const handleStartTransit = (rerouteId: string, notificationId: string) => {
-    console.log('Starting transit for reroute:', rerouteId);
-    startTransit(rerouteId);
-    markNotificationRead(notificationId);
-    toast({
-      title: "Transit Started",
-      description: "The shipment is now in transit. Tracking will begin automatically.",
-    });
-  };
-
-  const handleConfirmDelivery = (rerouteId: string, notificationId: string) => {
-    console.log('Confirming delivery for reroute:', rerouteId);
-    confirmDelivery(rerouteId);
-    markNotificationRead(notificationId);
-    toast({
-      title: "Delivery Confirmed",
-      description: "The reroute has been completed successfully.",
-    });
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'reroute_request':
-        return <Bell className="h-4 w-4" />;
-      case 'reroute_approved':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'reroute_rejected':
-        return <XCircle className="h-4 w-4" />;
-      case 'reroute_transit_ready':
-        return <Play className="h-4 w-4" />;
-      case 'reroute_in_transit':
-        return <Truck className="h-4 w-4" />;
-      case 'reroute_delivered':
-        return <Package className="h-4 w-4" />;
-      case 'reroute_completed':
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <Bell className="h-4 w-4" />;
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
-  };
-
   // Filter notifications relevant to current warehouse
   const relevantNotifications = notifications
     .filter(notification => notification.targetWarehouse === currentWarehouse)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-  const getActionButtons = (notification: any, relatedRequest: any) => {
-    if (!notification.rerouteId || !relatedRequest) return null;
-
-
-    // Destination warehouse - approve/reject pending requests
-    if (notification.type === 'reroute_request' && 
-        relatedRequest.status === 'pending' &&
-        currentWarehouse === relatedRequest.toWarehouse) {
-      return (
-        <div className="flex space-x-2 mt-3">
-          <Button
-            size="sm"
-            className="h-8 text-xs flex-1"
-            onClick={() => handleApproveReroute(notification.rerouteId!, notification.id)}
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs flex-1"
-            onClick={() => handleRejectReroute(notification.rerouteId!, notification.id)}
-          >
-            <XCircle className="h-3 w-3 mr-1" />
-            Reject
-          </Button>
-        </div>
-      );
-    }
-
-    // Source warehouse - start transit for approved requests
-    if (notification.type === 'reroute_approved' && 
-        relatedRequest.status === 'approved' &&
-        currentWarehouse === relatedRequest.fromWarehouse) {
-      return (
-        <div className="mt-3">
-          <Button
-            size="sm"
-            className="h-8 text-xs w-full"
-            onClick={() => handleStartTransit(notification.rerouteId!, notification.id)}
-          >
-            <Play className="h-3 w-3 mr-1" />
-            Start Transit
-          </Button>
-        </div>
-      );
-    }
-
-    // Destination warehouse - confirm delivery for delivered requests
-    if (notification.type === 'reroute_delivered' && 
-        relatedRequest.status === 'delivered' &&
-        currentWarehouse === relatedRequest.toWarehouse) {
-      return (
-        <div className="mt-3">
-          <Button
-            size="sm"
-            className="h-8 text-xs w-full"
-            onClick={() => handleConfirmDelivery(notification.rerouteId!, notification.id)}
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Confirm Receipt
-          </Button>
-        </div>
-      );
-    }
-
-    return null;
-  };
 
   return (
     <Sheet>
@@ -231,85 +78,11 @@ export const NotificationsPanel: React.FC = () => {
               const relatedRequest = rerouteRequests.find(req => req.id === notification.rerouteId);
               
               return (
-                <div
+                <NotificationItem
                   key={notification.id}
-                  className={`p-4 border rounded-lg space-y-3 transition-all duration-200 ${
-                    !notification.read 
-                      ? 'border-primary bg-primary/5 shadow-sm' 
-                      : 'border-border hover:shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <div className={`mt-0.5 ${!notification.read ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-semibold text-sm leading-tight ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {notification.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatTimestamp(notification.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                    {!notification.read && (
-                      <div className="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
-                    )}
-                  </div>
-
-                  {/* Show related request info */}
-                  {relatedRequest && (
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {relatedRequest.quantity} units
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {relatedRequest.fromWarehouse} → {relatedRequest.toWarehouse}
-                        </Badge>
-                        <Badge 
-                          variant={
-                            relatedRequest.status === 'pending' ? 'secondary' :
-                            relatedRequest.status === 'approved' ? 'default' :
-                            relatedRequest.status === 'in_transit' ? 'outline' :
-                            relatedRequest.status === 'delivered' ? 'secondary' :
-                            relatedRequest.status === 'completed' ? 'default' :
-                            'destructive'
-                          } 
-                          className="text-xs capitalize"
-                        >
-                          {relatedRequest.status.replace('_', ' ')}
-                        </Badge>
-                        {relatedRequest.transitProgress !== undefined && relatedRequest.transitProgress > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            <Truck className="h-3 w-3 mr-1" />
-                            {relatedRequest.transitProgress}%
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {/* Action buttons */}
-                      {getActionButtons(notification, relatedRequest)}
-                    </div>
-                  )}
-
-                  {/* Mark as read button for unread notifications */}
-                  {!notification.read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-xs w-full"
-                      onClick={() => markNotificationRead(notification.id)}
-                    >
-                      Mark as read
-                    </Button>
-                  )}
-                </div>
+                  notification={notification}
+                  relatedRequest={relatedRequest}
+                />
               );
             })
           )}
