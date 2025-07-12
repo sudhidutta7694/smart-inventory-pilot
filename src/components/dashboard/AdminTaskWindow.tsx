@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import { NewTaskDialog } from "./NewTaskDialog";
 import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { RerouteRequest } from "@/types/warehouse";
 
 interface Task {
   id: string;
@@ -27,6 +28,9 @@ interface Task {
   dueDate: string;
   description?: string;
   assignee?: string;
+  rerouteId?: string;
+  actionType?: string;
+  rerouteData?: RerouteRequest;
 }
 
 const AdminTaskWindow = () => {
@@ -141,7 +145,6 @@ const AdminTaskWindow = () => {
     });
   };
 
-  // Convert reroute requests to tasks for current warehouse
   const rerouteTasks = rerouteRequests
     .filter(request => 
       request.fromWarehouse === currentWarehouse || 
@@ -243,7 +246,7 @@ const AdminTaskWindow = () => {
     }
   };
 
-  const getRerouteActionButton = (task: any) => {
+  const getRerouteActionButton = (task: Task) => {
     if (!task.rerouteId || !task.actionType) return null;
 
     switch (task.actionType) {
@@ -254,7 +257,7 @@ const AdminTaskWindow = () => {
               variant="outline" 
               size="sm" 
               className="h-6 text-xs flex-1"
-              onClick={() => handleRerouteAction(task.rerouteId, 'approve')}
+              onClick={() => handleRerouteAction(task.rerouteId!, 'approve')}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Approve
@@ -263,7 +266,7 @@ const AdminTaskWindow = () => {
               variant="outline" 
               size="sm" 
               className="h-6 text-xs flex-1"
-              onClick={() => handleRerouteAction(task.rerouteId, 'reject')}
+              onClick={() => handleRerouteAction(task.rerouteId!, 'reject')}
             >
               Reject
             </Button>
@@ -275,7 +278,7 @@ const AdminTaskWindow = () => {
             variant="outline" 
             size="sm" 
             className="h-6 text-xs"
-            onClick={() => handleRerouteAction(task.rerouteId, 'start_transit')}
+            onClick={() => handleRerouteAction(task.rerouteId!, 'start_transit')}
           >
             <Play className="h-3 w-3 mr-1" />
             Start Transit
@@ -287,7 +290,7 @@ const AdminTaskWindow = () => {
             variant="outline" 
             size="sm" 
             className="h-6 text-xs"
-            onClick={() => handleRerouteAction(task.rerouteId, 'confirm_delivery')}
+            onClick={() => handleRerouteAction(task.rerouteId!, 'confirm_delivery')}
           >
             <Package className="h-3 w-3 mr-1" />
             Confirm Receipt
