@@ -112,8 +112,25 @@ export const EastWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({
     // Listen for storage changes
     window.addEventListener('storage', handleCrossWarehouseNotifications);
     
+    // Listen for storage changes to update local reroute requests
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === EAST_STORAGE_KEY && e.newValue) {
+        try {
+          const parsedData = JSON.parse(e.newValue);
+          if (parsedData.rerouteRequests) {
+            setRerouteRequests(parsedData.rerouteRequests);
+          }
+        } catch (error) {
+          console.error('Error updating reroute requests from storage:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    
     return () => {
       window.removeEventListener('storage', handleCrossWarehouseNotifications);
+      window.removeEventListener('storage', handleStorageUpdate);
     };
   }, []);
 
@@ -290,7 +307,7 @@ export const EastWarehouseProvider: React.FC<{ children: React.ReactNode }> = ({
         // Send rejection notification to source warehouse
         const notification: Notification = {
           id: `NOTIF-REJECT-${Date.now()}`,
-          type: 'reroute_request',
+          type: 'reroute_rejected',
           title: 'Reroute Request Rejected',
           message: `Your request for ${req.quantity} units of ${req.productName} has been rejected`,
           timestamp: new Date().toISOString(),

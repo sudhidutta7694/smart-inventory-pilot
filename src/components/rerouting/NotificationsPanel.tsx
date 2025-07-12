@@ -30,11 +30,6 @@ export const NotificationsPanel: React.FC = () => {
 
   const currentWarehouse = user?.warehouse || 'East';
 
-  console.log('=== NOTIFICATIONS PANEL DEBUG ===');
-  console.log('Current warehouse:', currentWarehouse);
-  console.log('All notifications:', notifications);
-  console.log('Unread count:', unreadCount);
-  console.log('Reroute requests:', rerouteRequests);
 
   const handleApproveReroute = (rerouteId: string, notificationId: string) => {
     console.log('Approving reroute:', rerouteId, 'from notification:', notificationId);
@@ -83,6 +78,8 @@ export const NotificationsPanel: React.FC = () => {
         return <Bell className="h-4 w-4" />;
       case 'reroute_approved':
         return <CheckCircle className="h-4 w-4" />;
+      case 'reroute_rejected':
+        return <XCircle className="h-4 w-4" />;
       case 'reroute_transit_ready':
         return <Play className="h-4 w-4" />;
       case 'reroute_in_transit':
@@ -112,24 +109,12 @@ export const NotificationsPanel: React.FC = () => {
 
   // Filter notifications relevant to current warehouse
   const relevantNotifications = notifications
-    .filter(notification => {
-      console.log('Checking notification:', notification.id, 'target:', notification.targetWarehouse, 'current:', currentWarehouse);
-      return notification.targetWarehouse === currentWarehouse;
-    })
+    .filter(notification => notification.targetWarehouse === currentWarehouse)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-  console.log('Relevant notifications after filter:', relevantNotifications);
 
   const getActionButtons = (notification: any, relatedRequest: any) => {
     if (!notification.rerouteId || !relatedRequest) return null;
 
-    console.log('Action button check:', {
-      notificationType: notification.type,
-      requestStatus: relatedRequest.status,
-      currentWarehouse,
-      fromWarehouse: relatedRequest.fromWarehouse,
-      toWarehouse: relatedRequest.toWarehouse
-    });
 
     // Destination warehouse - approve/reject pending requests
     if (notification.type === 'reroute_request' && 
@@ -244,11 +229,6 @@ export const NotificationsPanel: React.FC = () => {
           ) : (
             relevantNotifications.map((notification) => {
               const relatedRequest = rerouteRequests.find(req => req.id === notification.rerouteId);
-              
-              console.log('Processing notification:', notification.id);
-              console.log('Notification type:', notification.type);
-              console.log('Related request:', relatedRequest);
-              console.log('Request status:', relatedRequest?.status);
               
               return (
                 <div

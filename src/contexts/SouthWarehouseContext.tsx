@@ -96,8 +96,25 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
     // Listen for storage changes
     window.addEventListener('storage', handleCrossWarehouseNotifications);
     
+    // Listen for storage changes to update local reroute requests
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === SOUTH_STORAGE_KEY && e.newValue) {
+        try {
+          const parsedData = JSON.parse(e.newValue);
+          if (parsedData.rerouteRequests) {
+            setRerouteRequests(parsedData.rerouteRequests);
+          }
+        } catch (error) {
+          console.error('Error updating reroute requests from storage:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    
     return () => {
       window.removeEventListener('storage', handleCrossWarehouseNotifications);
+      window.removeEventListener('storage', handleStorageUpdate);
     };
   }, []);
 
@@ -218,6 +235,27 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
       if (req.id === id) {
         const updatedReq = { ...req, status: 'approved' as const, approvedAt: new Date().toISOString() };
         
+        // Update the source warehouse data as well
+        try {
+          const sourceStorageKey = `mockData_${req.fromWarehouse.toLowerCase()}`;
+          const sourceData = localStorage.getItem(sourceStorageKey);
+          if (sourceData) {
+            const parsedSourceData = JSON.parse(sourceData);
+            parsedSourceData.rerouteRequests = parsedSourceData.rerouteRequests.map((sourceReq: RerouteRequest) =>
+              sourceReq.id === id ? updatedReq : sourceReq
+            );
+            localStorage.setItem(sourceStorageKey, JSON.stringify(parsedSourceData));
+            
+            // Trigger storage event for real-time updates
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: sourceStorageKey,
+              newValue: JSON.stringify(parsedSourceData)
+            }));
+          }
+        } catch (error) {
+          console.error('Error updating source warehouse data:', error);
+        }
+        
         // Send approval notification to source warehouse
         const notification: Notification = {
           id: `NOTIF-APPROVE-${Date.now()}`,
@@ -241,10 +279,31 @@ export const SouthWarehouseProvider: React.FC<{ children: React.ReactNode }> = (
       if (req.id === id) {
         const updatedReq = { ...req, status: 'rejected' as const };
         
+        // Update the source warehouse data as well
+        try {
+          const sourceStorageKey = `mockData_${req.fromWarehouse.toLowerCase()}`;
+          const sourceData = localStorage.getItem(sourceStorageKey);
+          if (sourceData) {
+            const parsedSourceData = JSON.parse(sourceData);
+            parsedSourceData.rerouteRequests = parsedSourceData.rerouteRequests.map((sourceReq: RerouteRequest) =>
+              sourceReq.id === id ? updatedReq : sourceReq
+            );
+            localStorage.setItem(sourceStorageKey, JSON.stringify(parsedSourceData));
+            
+            // Trigger storage event for real-time updates
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: sourceStorageKey,
+              newValue: JSON.stringify(parsedSourceData)
+            }));
+          }
+        } catch (error) {
+          console.error('Error updating source warehouse data:', error);
+        }
+        
         // Send rejection notification to source warehouse
         const notification: Notification = {
           id: `NOTIF-REJECT-${Date.now()}`,
-          type: 'reroute_request',
+          type: 'reroute_rejected',
           title: 'Reroute Request Rejected',
           message: `Your request for ${req.quantity} units of ${req.productName} has been rejected`,
           timestamp: new Date().toISOString(),
