@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
+import { MockDataProvider } from "@/contexts/MockDataContext";
 import { SouthWarehouseProvider } from "@/contexts/SouthWarehouseContext";
 import { EastWarehouseProvider } from "@/contexts/EastWarehouseContext";
 import Login from "./pages/Login";
@@ -24,7 +26,9 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
       <AuthProvider>
-        <TooltipProvider>
+        <InventoryProvider>
+          <MockDataProvider>
+            <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -142,7 +146,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+            </TooltipProvider>
+          </MockDataProvider>
+        </InventoryProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

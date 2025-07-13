@@ -24,7 +24,8 @@ import {
   DollarSign,
   Building2
 } from "lucide-react";
-import { products, type Product } from "@/data/mockData";
+import { type Product } from "@/data/mockData";
+import { useWarehouseContext } from "@/hooks/useWarehouseContext";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -50,13 +51,14 @@ import { toast } from "@/hooks/use-toast";
 
 const ProductDetails = () => {
   const { productId } = useParams<{ productId: string }>();
+  const { products } = useWarehouseContext();
   const navigate = useNavigate();
   const [selectedDateRange, setSelectedDateRange] = useState("30");
   const [selectedZone, setSelectedZone] = useState("All");
 
   const product = useMemo(() => {
     return products.find(p => p.id === productId);
-  }, [productId]);
+  }, [productId, products]);
 
   if (!product) {
     return (

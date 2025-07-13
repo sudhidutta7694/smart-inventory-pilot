@@ -27,9 +27,11 @@ import {
   Target,
   Calendar
 } from "lucide-react";
-import { metricsData, zones } from "@/data/mockData";
+import { zones } from "@/data/mockData";
+import { useMockData } from "@/contexts/MockDataContext";
 
 const MetricsOverview = () => {
+  const { metricsData } = useMockData();
   const [selectedZone, setSelectedZone] = useState("All");
   const [timeRange, setTimeRange] = useState("30d");
   const [activeMetric, setActiveMetric] = useState("turnover");

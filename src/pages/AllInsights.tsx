@@ -16,11 +16,13 @@ import {
   Filter
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { insights, zones } from "@/data/mockData";
+import { zones } from "@/data/mockData";
+import { useMockData } from "@/contexts/MockDataContext";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 
 const AllInsights = () => {
+  const { insights } = useMockData();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("All");

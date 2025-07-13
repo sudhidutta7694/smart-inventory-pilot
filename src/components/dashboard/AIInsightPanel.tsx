@@ -11,11 +11,13 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { insights, type Insight } from "@/data/mockData";
+import { type Insight } from "@/data/mockData";
+import { useMockData } from "@/contexts/MockDataContext";
 import { RerouteModal } from "@/components/rerouting/RerouteModal";
 import { useState } from "react";
 
 const AIInsightPanel = () => {
+  const { insights } = useMockData();
   const navigate = useNavigate();
   const [rerouteModalOpen, setRerouteModalOpen] = useState(false);
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);

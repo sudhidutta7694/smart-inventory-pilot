@@ -29,13 +29,13 @@ import {
 import { zones, categories, suppliers, type Product } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useWarehouseContext } from "@/hooks/useWarehouseContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import InventoryModal from "@/components/inventory/InventoryModal";
 import DeleteConfirmDialog from "@/components/inventory/DeleteConfirmDialog";
 
 const InventoryTable = () => {
   const navigate = useNavigate();
-  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useWarehouseContext();
+  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useInventory();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("All");
